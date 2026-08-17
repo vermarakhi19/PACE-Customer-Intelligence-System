@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block page_title %}Settings{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:520px;">
+  <div class="panel-title"><i class="fa-solid fa-user-gear" style="color:var(--accent); font-size:13px;"></i> Account</div>
+  <p><strong>Logged in as:</strong> {{ user }}</p>
+  <p class="text-muted" style="font-size:13px;">Password changes, roles and org settings would connect to a real user table in production; this demo uses a single hard-coded admin account (see app.py -&gt; USERS dict).</p>
+</div>
+<div class="panel" style="max-width:520px;">
+  <div class="panel-title"><i class="fa-solid fa-palette" style="color:var(--positive); font-size:13px;"></i> Appearance</div>
+  <p>RetailPulse defaults to the Aurora dark theme. Use the sun/moon icon in the top bar to switch to light mode any time.</p>
+</div>
+<div class="panel" style="max-width:520px;">
+  <div class="panel-title"><i class="fa-solid fa-diagram-project" style="color:var(--indigo); font-size:13px;"></i> Data Pipeline</div>
+  <p class="text-muted" style="font-size:13px;">To refresh the dashboard with new data, replace <code>data/raw/ecommerce_churn.csv</code> and re-run <code>python src/run_pipeline.py</code>, then restart the Flask app.</p>
+</div>
+{% endblock %}

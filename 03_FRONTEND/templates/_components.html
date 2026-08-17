@@ -1,0 +1,134 @@
+{#
+  _components.html — reusable UI component library (Jinja macros).
+
+  Every dashboard surface is composed from these so styling stays consistent
+  and a change lands in one place instead of nine templates. Import with:
+      {% from "_components.html" import kpi_card, chart_panel %}
+
+  Design contract: a macro NEVER invents data. If a value is missing the
+  component hides that element rather than substituting a placeholder number.
+#}
+
+{# ---------------------------------------------------------------------------
+   KPI CARD
+   label      : uppercase caption
+   value      : the large primary figure (pre-formatted string)
+   icon       : font-awesome class, e.g. "fa-users"
+   tone       : violet | green | red | cyan  (drives icon chip + accent)
+   delta      : dict {pct: float, basis: str} or None -> chip hidden when None
+   delta_good : "up" or "down" — which direction is a GOOD outcome
+   spark_id   : canvas id for the sparkline; omit to render no sparkline
+   stars      : float out of 5 to render a star row instead of a sparkline
+--------------------------------------------------------------------------- #}
+{% macro kpi_card(label, value, icon, tone='violet', delta=None, delta_good='up', spark_id=None, stars=None, footnote=None) %}
+<div class="kpi-card kpi-{{ tone }}">
+  <div class="kpi-top">
+    <div class="kpi-label">{{ label }}</div>
+    <div class="kpi-icon"><i class="fa-solid {{ icon }}"></i></div>
+  </div>
+  <div class="kpi-foot">
+    <div class="kpi-value">{{ value }}</div>
+    {% if delta is not none and delta.pct is not none %}
+      {% set is_up = delta.pct >= 0 %}
+      {% set good = (is_up and delta_good == 'up') or (not is_up and delta_good == 'down') %}
+      <span class="kpi-delta {{ 'good' if good else 'bad' }}"
+            title="{{ delta.basis }}">
+        <i class="fa-solid fa-arrow-{{ 'up' if is_up else 'down' }}"></i>{{ '%+.1f'|format(delta.pct) }}%
+      </span>
+    {% endif %}
+  </div>
+  {% if stars is not none %}
+    <div class="kpi-stars" aria-label="{{ stars }} out of 5">
+      {% for i in range(1, 6) %}
+        {% set diff = stars - i + 1 %}
+        <i class="fa-solid fa-star {{ 'filled' if diff >= 1 else ('half' if diff > 0 else '') }}"></i>
+      {% endfor %}
+    </div>
+  {% elif spark_id %}
+    <div class="spark-box"><canvas id="{{ spark_id }}"></canvas></div>
+  {% endif %}
+  {% if footnote %}<div class="kpi-note">{{ footnote }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+
+{# ---------------------------------------------------------------------------
+   CHART PANEL — titled surface with optional drill-through link.
+   Use with `call`: {% call chart_panel("Title", "fa-x", url) %} ...body... {% endcall %}
+--------------------------------------------------------------------------- #}
+{% macro chart_panel(title, icon, href=None, tone='violet', height=None) %}
+<div class="panel panel-chart">
+  <div class="panel-title">
+    <i class="fa-solid {{ icon }} chip-{{ tone }}"></i>
+    <span>{{ title }}</span>
+    {% if href %}<a class="panel-link" href="{{ href }}" aria-label="Open {{ title }}"><i class="fa-solid fa-chevron-right"></i></a>{% endif %}
+  </div>
+  <div class="panel-body" {% if height %}style="min-height:{{ height }}"{% endif %}>
+    {{ caller() }}
+  </div>
+</div>
+{% endmacro %}
+
+
+{# ---------------------------------------------------------------------------
+   MODEL CARD — one evaluated model with its real metrics.
+   metrics : list of {label, value} — caller decides which apply to this model
+             family (classification vs clustering), so we never show an
+             inapplicable metric like ROC-AUC on a clustering model.
+--------------------------------------------------------------------------- #}
+{% macro model_card(kind, name, icon, metrics, tone='violet', champion=False) %}
+<div class="model-card {{ 'is-champion' if champion else '' }}">
+  <div class="model-head">
+    <div class="m-icon chip-{{ tone }}"><i class="fa-solid {{ icon }}"></i></div>
+    <div>
+      <div class="m-label">{{ kind }}</div>
+      <div class="m-name">{{ name }}</div>
+    </div>
+    {% if champion %}<span class="pill pill-champion"><i class="fa-solid fa-trophy"></i> Champion</span>{% endif %}
+  </div>
+  {% if metrics %}
+  <div class="model-metrics">
+    {% for m in metrics %}
+      <div class="mm">
+        <div class="mm-label">{{ m.label }}</div>
+        <div class="mm-val">{{ m.value }}</div>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+
+{# ---------------------------------------------------------------------------
+   MARKET ROW — one geography ranked by real customer count.
+--------------------------------------------------------------------------- #}
+{% macro market_row(rank, name, customers, avg_spend, share_pct, recency=None) %}
+<div class="market-row" tabindex="0">
+  <div class="market-rank">{{ rank }}</div>
+  <div class="market-main">
+    <div class="market-head">
+      <span class="market-name">{{ name }}</span>
+      <span class="market-count">{{ "{:,}".format(customers) }}</span>
+    </div>
+    <div class="market-bar"><span style="width: {{ share_pct }}%"></span></div>
+    <div class="market-meta">
+      <span>Avg spend <b>{{ avg_spend }}</b></span>
+      {% if recency is not none %}<span>Avg recency <b>{{ recency }}d</b></span>{% endif %}
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+
+{# ---------------------------------------------------------------------------
+   EMPTY STATE — shown when a real data source is absent. Deliberately does
+   NOT fall back to sample numbers; it tells the user what to run instead.
+--------------------------------------------------------------------------- #}
+{% macro empty_state(icon, title, body) %}
+<div class="empty-state">
+  <i class="fa-solid {{ icon }}"></i>
+  <h3>{{ title }}</h3>
+  <p>{{ body }}</p>
+</div>
+{% endmacro %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block page_title %}Reports & Business Recommendations{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="panel">
+      <div class="panel-title"><i class="fa-solid fa-lightbulb" style="color:var(--accent); font-size:13px;"></i> Business Recommendations</div>
+      {% if not recommendations %}
+        <div class="empty-state"><i class="fa-solid fa-file-lines"></i><p>Run the pipeline to generate recommendations.</p></div>
+      {% else %}
+        <ul class="list-group list-group-flush">
+        {% for r in recommendations %}
+          <li class="list-group-item bg-transparent" style="border-color: var(--border); font-size:14px;">
+            <i class="fa-solid fa-lightbulb" style="color:var(--accent);"></i> {{ r }}
+          </li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="panel">
+      <div class="panel-title"><i class="fa-solid fa-magnifying-glass-chart" style="color:var(--positive); font-size:13px;"></i> EDA Business Insights</div>
+      {% if not eda_insights %}
+        <div class="empty-state"><i class="fa-solid fa-chart-simple"></i><p>Run the pipeline to generate EDA insights.</p></div>
+      {% else %}
+        <ul class="list-group list-group-flush">
+        {% for key, val in eda_insights.items() %}
+          <li class="list-group-item bg-transparent" style="border-color: var(--border); font-size:14px;">
+            <i class="fa-solid fa-magnifying-glass-chart" style="color:var(--positive);"></i> {{ val }}
+          </li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  </div>
+</div>
+<div class="panel">
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('export_excel') }}" class="btn btn-success"><i class="fa-solid fa-file-excel"></i> Download Full Data (Excel)</a>
+    <a href="{{ url_for('export_pdf') }}" class="btn btn-danger"><i class="fa-solid fa-file-pdf"></i> Download Summary (PDF)</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Sign in — RetailPulse India{% endblock %}
+{% block auth_content %}
+<div class="auth-wrap">
+  <div class="orb-field"><div class="orb orb-1"></div><div class="orb orb-2"></div></div>
+  <div style="position:relative; z-index:1; display:flex; flex-direction:column; align-items:center;">
+    <a href="{{ url_for('welcome') }}" class="auth-back"><i class="fa-solid fa-arrow-left"></i> Back to home</a>
+    <div class="auth-card">
+      <div class="auth-brand">
+        <span class="brand-mark">R<span class="brand-dot">P</span></span>
+        <div>
+          <div class="brand-name">RetailPulse</div>
+          <div class="brand-sub" style="color:var(--text-tertiary);">India</div>
+        </div>
+      </div>
+      <h2 style="font-size:21px; font-weight:700; margin-bottom:6px;">Welcome back</h2>
+      <p style="color:var(--text-secondary); font-size:13.5px; margin-bottom:26px;">Sign in to Customer Segmentation &amp; Retention Prediction</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST">
+        <div class="mb-3">
+          <label class="form-label">Username</label>
+          <input type="text" name="username" class="form-control" placeholder="admin" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn w-100 btn-primary">Sign In</button>
+      </form>
+      <p style="font-size:12px; color:var(--text-tertiary); margin-top:20px; text-align:center;">Demo credentials: admin / admin123</p>
+      <p style="font-size:12.5px; color:var(--text-tertiary); margin-top:8px; text-align:center;">No account yet? Sign-up isn't wired to a user database in this demo — ask an admin to add you.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

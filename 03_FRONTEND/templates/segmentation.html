@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block page_title %}Customer Segmentation{% endblock %}
+{% block content %}
+{% if not has_data %}
+<div class="panel empty-state"><i class="fa-solid fa-layer-group"></i><h3>No segmentation data yet</h3><p>Run the pipeline first.</p></div>
+{% else %}
+<div class="panel">
+  <div class="panel-title"><i class="fa-solid fa-diagram-project" style="color:var(--accent); font-size:13px;"></i> Clustering Algorithm Comparison</div>
+  <table class="table">
+    <thead><tr><th>Model</th><th>Clusters Found</th><th>Silhouette Score ↑</th><th>Davies-Bouldin ↓</th><th>Calinski-Harabasz ↑</th></tr></thead>
+    <tbody>
+      {% for m in seg_metrics.get('comparison', []) %}
+      <tr class="{{ 'table-warning' if m.model == seg_metrics.get('best_model') }}">
+        <td><strong>{{ m.model }}</strong> {% if m.model == seg_metrics.get('best_model') %}<span class="badge-segment">Best</span>{% endif %}</td>
+        <td>{{ m.n_clusters }}</td>
+        <td>{{ m.silhouette if m.silhouette is not none else '—' }}</td>
+        <td>{{ m.davies_bouldin if m.davies_bouldin is not none else '—' }}</td>
+        <td>{{ m.calinski_harabasz if m.calinski_harabasz is not none else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="text-muted" style="font-size:13px;">K-Means was selected for production because it gave the highest Silhouette Score, produces balanced, roughly equal-sized clusters (ideal for targeting campaigns), and — unlike DBSCAN — never assigns customers to a 'noise' bucket that can't be marketed to.</p>
+</div>
+
+<div class="panel">
+  <div class="panel-title"><i class="fa-solid fa-users-rectangle" style="color:var(--positive); font-size:13px;"></i> Segment Profiles (average values)</div>
+  <div class="row g-3">
+    {% for seg, vals in segment_profile.items() %}
+    <div class="col-md-6 col-lg-4">
+      <div class="kpi-card">
+        <div class="kpi-label">{{ seg }}</div>
+        <div style="font-size:13px; margin-top:8px; line-height:1.9;">
+          Recency: <strong>{{ vals.Recency }}</strong> days<br>
+          Frequency: <strong>{{ vals.Frequency }}</strong> orders<br>
+          Monetary: <strong>₹{{ "{:,.0f}".format(vals.Monetary) }}</strong><br>
+          Engagement: <strong>{{ vals.EngagementScore }}</strong>/100<br>
+          Satisfaction: <strong>{{ vals.SatisfactionScore }}</strong>/5
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

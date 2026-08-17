@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block page_title %}Sales Forecasting{% endblock %}
+{% block content %}
+{% if not has_data %}
+<div class="panel empty-state"><i class="fa-solid fa-chart-simple"></i><h3>No forecast yet</h3><p>Run the pipeline first (module 07_sales_forecasting.py).</p></div>
+{% else %}
+<div class="panel">
+  <div class="panel-title"><i class="fa-solid fa-chart-simple" style="color:var(--accent); font-size:13px;"></i> Customer Lifecycle Revenue Forecast</div>
+  <p class="text-muted" style="font-size:13px;">{{ forecast.methodology }}</p>
+  <canvas id="lifecycleChart" height="90"></canvas>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="panel">
+      <div class="panel-title"><i class="fa-solid fa-scale-balanced" style="color:var(--indigo); font-size:13px;"></i> Backtest — Model Comparison</div>
+      <table class="table">
+        <thead><tr><th>Model</th><th>MAPE (%)</th><th>RMSE (₹)</th></tr></thead>
+        <tbody>
+          {% for m in forecast.backtest_comparison %}
+          <tr class="{{ 'table-warning' if m.model == forecast.best_backtest_model }}">
+            <td><strong>{{ m.model }}</strong> {% if m.model == forecast.best_backtest_model %}<span class="badge-segment">Best</span>{% endif %}</td>
+            <td>{{ m.mape if m.mape is not none else '—' }}</td>
+            <td>{{ m.rmse if m.rmse is not none else '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="text-muted" style="font-size:12.5px;">Backtested on the last 6 tenure-month points, held out from training. Beating the naive (carry-forward) baseline is the bar for a forecast to be considered useful.</p>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="panel">
+      <div class="panel-title"><i class="fa-solid fa-calendar-days" style="color:var(--positive); font-size:13px;"></i> Next {{ forecast.forecast.tenure_months|length }} Months — Projected Avg. Customer Value</div>
+      <table class="table">
+        <thead><tr><th>Tenure Month</th><th>Projected (₹)</th><th>Range (95% CI)</th></tr></thead>
+        <tbody>
+          {% for i in range(forecast.forecast.tenure_months|length) %}
+          <tr>
+            <td>{{ forecast.forecast.tenure_months[i] }}</td>
+            <td>₹{{ "{:,.0f}".format(forecast.forecast.predicted_avg_monetary[i]) }}</td>
+            <td>₹{{ "{:,.0f}".format(forecast.forecast.lower_ci[i]) }} – ₹{{ "{:,.0f}".format(forecast.forecast.upper_ci[i]) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% if forecast.segment_lifecycle_summary %}
+<div class="panel">
+  <div class="panel-title"><i class="fa-solid fa-users-rectangle" style="color:var(--accent); font-size:13px;"></i> Segment Lifecycle Snapshot</div>
+  <div class="row g-3">
+    {% for seg, vals in forecast.segment_lifecycle_summary.items() %}
+    <div class="col-md-6 col-lg-4">
+      <div class="kpi-card {{ 'green' if vals.trend == 'up' else 'red' }}">
+        <div class="kpi-label">{{ seg }}</div>
+        <div style="font-size:13px; margin-top:8px; line-height:1.9;">
+          Current: <strong>₹{{ "{:,.0f}".format(vals.current_avg_monetary) }}</strong><br>
+          Next-month projection: <strong>₹{{ "{:,.0f}".format(vals.next_month_projection) }}</strong><br>
+          Trend: <strong>{{ 'Upward' if vals.trend == 'up' else 'Downward' }}</strong>
+          <i class="fa-solid {{ 'fa-arrow-trend-up' if vals.trend == 'up' else 'fa-arrow-trend-down' }}"></i>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if has_data %}
+<script>
+const histMonths = {{ forecast.historical.tenure_months|tojson }};
+const histValues = {{ forecast.historical.avg_monetary|tojson }};
+const fcMonths = {{ forecast.forecast.tenure_months|tojson }};
+const fcValues = {{ forecast.forecast.predicted_avg_monetary|tojson }};
+const fcLower = {{ forecast.forecast.lower_ci|tojson }};
+const fcUpper = {{ forecast.forecast.upper_ci|tojson }};
+
+const allLabels = histMonths.concat(fcMonths);
+const historicalSeries = histValues.concat(Array(fcMonths.length).fill(null));
+const forecastSeries = Array(histMonths.length - 1).fill(null).concat([histValues[histValues.length - 1]]).concat(fcValues);
+const upperSeries = Array(histMonths.length).fill(null).concat(fcUpper);
+const lowerSeries = Array(histMonths.length).fill(null).concat(fcLower);
+
+new Chart(document.getElementById('lifecycleChart'), {
+  type: 'line',
+  data: {
+    labels: allLabels,
+    datasets: [
+      { label: 'Upper CI', data: upperSeries, borderColor: 'rgba(139,107,255,0.28)', backgroundColor: 'rgba(139,107,255,0.10)', fill: '+1', pointRadius: 0, tension: 0.3 },
+      { label: 'Lower CI', data: lowerSeries, borderColor: 'rgba(139,107,255,0.28)', pointRadius: 0, tension: 0.3, fill: false },
+      { label: 'Historical (real data)', data: historicalSeries, borderColor: '#A6AEC4', backgroundColor: '#A6AEC4', tension: 0.25, pointRadius: 2 },
+      { label: 'Forecast', data: forecastSeries, borderColor: '#2DD4E8', borderDash: [6, 4], tension: 0.25, pointRadius: 2 },
+    ]
+  },
+  options: {
+    scales: { x: { title: { display: true, text: 'Tenure (months since signup)' } }, y: { title: { display: true, text: 'Avg. Customer Value (₹)' } } },
+    plugins: { legend: { labels: { filter: (item) => item.text !== 'Lower CI' } } }
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

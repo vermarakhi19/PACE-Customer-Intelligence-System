@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}RetailPulse India{% endblock %}</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+{% if session.get('user') %}
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-mark">R<span class="brand-dot">P</span></span>
+      <div class="brand-text">
+        <div class="brand-name">RetailPulse</div>
+        <div class="brand-sub">India</div>
+      </div>
+      <button class="collapse-toggle d-none d-lg-flex" id="collapseToggle" title="Collapse sidebar" style="margin-left:auto;">
+        <i class="fa-solid fa-chevron-left" style="font-size:11px;"></i>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('dashboard') }}" class="nav-link {{ 'active' if request.endpoint=='dashboard' }}"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></a>
+      <a href="{{ url_for('customers') }}" class="nav-link {{ 'active' if request.endpoint=='customers' }}"><i class="fa-solid fa-users"></i><span>Customer List</span></a>
+      <a href="{{ url_for('segmentation') }}" class="nav-link {{ 'active' if request.endpoint=='segmentation' }}"><i class="fa-solid fa-layer-group"></i><span>Segmentation</span></a>
+      <a href="{{ url_for('prediction') }}" class="nav-link {{ 'active' if request.endpoint=='prediction' }}"><i class="fa-solid fa-bullseye"></i><span>Prediction</span></a>
+      <a href="{{ url_for('analytics') }}" class="nav-link {{ 'active' if request.endpoint=='analytics' }}"><i class="fa-solid fa-chart-line"></i><span>Analytics</span></a>
+      <a href="{{ url_for('forecasting') }}" class="nav-link {{ 'active' if request.endpoint=='forecasting' }}"><i class="fa-solid fa-chart-simple"></i><span>Forecasting</span></a>
+      <a href="{{ url_for('recommendations') }}" class="nav-link {{ 'active' if request.endpoint=='recommendations' }}"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Recommendations</span></a>
+      <a href="{{ url_for('model_comparison') }}" class="nav-link {{ 'active' if request.endpoint=='model_comparison' }}"><i class="fa-solid fa-scale-balanced"></i><span>Model Comparison</span></a>
+      <a href="{{ url_for('reports') }}" class="nav-link {{ 'active' if request.endpoint=='reports' }}"><i class="fa-solid fa-file-lines"></i><span>Reports</span></a>
+      <a href="{{ url_for('settings') }}" class="nav-link {{ 'active' if request.endpoint=='settings' }}"><i class="fa-solid fa-gear"></i><span>Settings</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="{{ url_for('logout') }}" class="nav-link logout"><i class="fa-solid fa-right-from-bracket"></i><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <div class="main-col">
+    <header class="topbar">
+      <button class="icon-btn d-lg-none" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+      <div class="topbar-actions">
+        {% block header_extra %}{% endblock %}
+        <button class="icon-btn" id="themeToggle" title="Toggle light mode"><i class="fa-solid fa-sun"></i></button>
+        <div class="dropdown">
+          <button class="icon-btn position-relative" data-bs-toggle="dropdown" title="Notifications">
+            <i class="fa-solid fa-bell"></i><span class="notif-dot"></span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end aurora-menu">
+            <li class="dropdown-header">Notifications</li>
+            <li><a class="dropdown-item" href="{{ url_for('prediction') }}"><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger);"></i> High-risk customers need attention</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('forecasting') }}"><i class="fa-solid fa-chart-simple" style="color:var(--cyan);"></i> Lifecycle forecast updated</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('model_comparison') }}"><i class="fa-solid fa-medal" style="color:var(--violet);"></i> Model comparison ready</a></li>
+          </ul>
+        </div>
+        <div class="dropdown">
+          <div class="user-chip dropdown-toggle" data-bs-toggle="dropdown" role="button"><i class="fa-solid fa-circle-user"></i> {{ session.get('user') }}</div>
+          <ul class="dropdown-menu dropdown-menu-end aurora-menu">
+            <li><a class="dropdown-item" href="{{ url_for('settings') }}"><i class="fa-solid fa-user-gear"></i> Account settings</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('settings') }}"><i class="fa-solid fa-palette"></i> Appearance</a></li>
+            <li><hr></li>
+            <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fa-solid fa-right-from-bracket"></i> Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% else %}
+  {% block auth_content %}{% endblock %}
+{% endif %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

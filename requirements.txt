@@ -1,0 +1,27 @@
+pandas==2.2.2
+numpy==1.26.4
+scikit-learn==1.5.1
+scipy==1.13.1
+matplotlib==3.9.1
+seaborn==0.13.2
+plotly==5.23.0
+xgboost==2.1.0
+lightgbm==4.5.0
+catboost==1.2.5
+imbalanced-learn==0.12.3
+Flask==3.0.3
+Flask-Login==0.6.3
+Flask-WTF==1.2.1
+Werkzeug==3.0.3
+openpyxl==3.1.5
+reportlab==4.2.2
+xlsxwriter==3.2.0
+joblib==1.4.2
+kaleido==0.2.1
+python-dotenv==1.0.1
+
+# Optional — 07_sales_forecasting.py runs fine without this (uses a
+# hand-implemented Holt's linear trend model with zero extra dependencies).
+# If installed, it's used to ALSO fit a Holt-Winters model for comparison
+# in the model-comparison table. Safe to skip if install fails.
+# statsmodels==0.14.2

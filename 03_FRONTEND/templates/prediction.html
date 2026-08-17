@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block page_title %}Retention Prediction{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="panel">
+      <div class="panel-title"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent); font-size:13px;"></i> Predict Churn for a Customer</div>
+      <form method="POST" class="row g-3">
+        <div class="col-6"><label class="form-label">Tenure (months)</label><input type="number" step="0.1" name="Tenure" class="form-control" required></div>
+        <div class="col-6"><label class="form-label">Warehouse to Home (km)</label><input type="number" step="0.1" name="WarehouseToHome" class="form-control" required></div>
+        <div class="col-6"><label class="form-label">Hours Spent on App</label><input type="number" step="0.1" name="HourSpendOnApp" class="form-control" required></div>
+        <div class="col-6"><label class="form-label">Devices Registered</label><input type="number" name="NumberOfDeviceRegistered" class="form-control" required></div>
+        <div class="col-6"><label class="form-label">Satisfaction Score (1-5)</label><input type="number" min="1" max="5" name="SatisfactionScore" class="form-control" required></div>
+        <div class="col-6"><label class="form-label">Number of Addresses</label><input type="number" name="NumberOfAddress" class="form-control" required></div>
+        <div class="col-6"><label class="form-label">Complaint Raised (0/1)</label><input type="number" min="0" max="1" name="Complain" class="form-control" required></div>
+        <div class="col-6"><label class="form-label">Order Count</label><input type="number" name="OrderCount" class="form-control" required></div>
+        <div class="col-6"><label class="form-label">Coupons Used</label><input type="number" name="CouponUsed" class="form-control" required></div>
+        <div class="col-6"><label class="form-label">Days Since Last Order</label><input type="number" name="DaySinceLastOrder" class="form-control" required></div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary">Predict Retention Outcome</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="panel">
+      <div class="panel-title"><i class="fa-solid fa-bullseye" style="color:var(--positive); font-size:13px;"></i> Result</div>
+      {% if result %}
+      <div class="kpi-card {{ 'red' if result.risk_band == 'High' else ('green' if result.risk_band == 'Low' else '') }}">
+        <div class="kpi-label">Prediction</div>
+        <div class="kpi-value">{{ result.prediction }}</div>
+      </div>
+      <p class="mt-3">Churn Probability: <strong>{{ result.churn_probability }}%</strong></p>
+      <p>Risk Band: <span class="badge-risk-{{ result.risk_band|lower }}">{{ result.risk_band }}</span></p>
+      {% else %}
+      <div class="empty-state"><i class="fa-solid fa-wand-magic-sparkles"></i><p>Fill the form to see a live prediction from the best-performing model.</p></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+.env
+*.pkl
+*.log
+.DS_Store
+
+# Pipeline-generated artifacts (regenerate with `python 02_ML_AI/run_pipeline.py`)
+04_DATA_TESTING/datasets/raw/*.csv
+04_DATA_TESTING/datasets/raw/*.xlsx
+04_DATA_TESTING/datasets/processed/*.csv
+02_ML_AI/models/*.pkl
+04_DATA_TESTING/reports/figures/*.png
+04_DATA_TESTING/reports/*.json

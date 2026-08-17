@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block page_title %}Product Recommendations{% endblock %}
+{% block content %}
+{% if not has_data %}
+<div class="panel empty-state"><i class="fa-solid fa-wand-magic-sparkles"></i><h3>No recommendations yet</h3><p>Run the pipeline first (module 08_recommendations.py).</p></div>
+{% else %}
+<div class="panel">
+  <div class="panel-title"><i class="fa-solid fa-circle-info" style="color:var(--indigo); font-size:13px;"></i> How this works</div>
+  <p class="text-muted" style="font-size:13px;">
+    Content-based recommender: for each customer, we find the 10 most behaviourally-similar
+    customers (by segment, RFM, engagement, city tier — deliberately <em>not</em> by category,
+    to avoid a circular recommendation) and suggest categories those similar customers favour.
+    This dataset has no basket/transaction log, so this is content-based similarity, not
+    collaborative filtering — shown here plainly rather than overclaimed.
+  </p>
+</div>
+
+<div class="panel">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="panel-title mb-0"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent); font-size:13px;"></i> Per-Customer Recommendations</div>
+    <form method="get" class="d-flex" style="gap:8px;">
+      <input type="text" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="Search by name or ID" style="width:220px;">
+      <button class="btn btn-sm btn-primary" type="submit">Search</button>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table id="recTable" class="table table-hover align-middle" style="width:100%">
+      <thead>
+        <tr>
+          <th>Customer ID</th>
+          {% if customers and customers[0].get('CustomerName') %}<th>Name</th>{% endif %}
+          <th>Segment</th>
+          <th>Current Category</th>
+          <th>Recommended #1</th>
+          <th>Recommended #2</th>
+          <th>Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in customers %}
+        <tr>
+          <td>{{ row.CustomerID }}</td>
+          {% if row.get('CustomerName') %}<td>{{ row.CustomerName }}</td>{% endif %}
+          <td><span class="badge-segment">{{ row.SegmentName }}</span></td>
+          <td>{{ row.CurrentCategory }}</td>
+          <td>{{ row.RecommendedCategory1 }}{% if row.Confidence1 %} <span class="text-muted">({{ row.Confidence1 }}%)</span>{% endif %}</td>
+          <td>{{ row.RecommendedCategory2 }}{% if row.Confidence2 %} <span class="text-muted">({{ row.Confidence2 }}%)</span>{% endif %}</td>
+          <td style="font-size:12.5px;">{{ row.Reason }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if affinity %}
+<div class="panel">
+  <div class="panel-title"><i class="fa-solid fa-table-cells" style="color:var(--positive); font-size:13px;"></i> Segment × Category Affinity (%)</div>
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Segment</th>
+          {% for cat in (affinity.values()|list|first).keys() %}<th>{{ cat }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for seg, cats in affinity.items() %}
+        <tr>
+          <td><strong>{{ seg }}</strong></td>
+          {% for cat, pct in cats.items() %}<td>{{ pct }}%</td>{% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if has_data %}
+<script>
+$(document).ready(function () {
+  $('#recTable').DataTable({ pageLength: 10, lengthMenu: [10, 25, 50, 100], order: [] });
+});
+</script>
+{% endif %}
+{% endblock %}

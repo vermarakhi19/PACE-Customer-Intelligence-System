@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}RetailPulse India — Predictive Retail Intelligence{% endblock %}
+{% block auth_content %}
+<div class="orb-field"><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
+
+<nav class="landing-nav">
+  <div style="display:flex; align-items:center; gap:11px;">
+    <span class="brand-mark">R<span class="brand-dot">P</span></span>
+    <div>
+      <div class="brand-name" style="font-size:15px;">RetailPulse</div>
+      <div class="brand-sub" style="color:var(--text-tertiary); font-size:9.5px;">India</div>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="#features">Product</a>
+    <a href="#stats">Impact</a>
+    <a href="{{ url_for('login') }}" class="btn btn-primary btn-sm">Sign in <i class="fa-solid fa-arrow-right" style="font-size:11px; margin-left:4px;"></i></a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-eyebrow"><span class="dot"></span> Live on real Indian retail customer data</div>
+  <h1>See churn coming <span class="gradient-text">before it happens.</span></h1>
+  <p class="lede">
+    RetailPulse segments your customers, predicts who's about to leave, forecasts real
+    lifecycle revenue, and recommends what to do next — built for Indian retail, from
+    ₹ spend bands to festive-season churn patterns.
+  </p>
+  <div class="hero-cta">
+    <a href="{{ url_for('login') }}" class="btn btn-primary">Open the dashboard</a>
+    <a href="#features" class="btn btn-outline-brand">See what's inside</a>
+  </div>
+
+  <div class="stat-strip" id="stats">
+    <div class="stat-item"><div class="stat-num">5,630</div><div class="stat-cap">Customers analysed</div></div>
+    <div class="stat-item"><div class="stat-num">5</div><div class="stat-cap">Behavioural segments</div></div>
+    <div class="stat-item"><div class="stat-num">7</div><div class="stat-cap">Churn models compared</div></div>
+    <div class="stat-item"><div class="stat-num">₹ INR</div><div class="stat-cap">Indian-context throughout</div></div>
+  </div>
+</section>
+
+<section class="feature-grid" id="features">
+  <div class="feature-card">
+    <div class="f-icon"><i class="fa-solid fa-layer-group"></i></div>
+    <h3>Customer Segmentation</h3>
+    <p>K-Means, DBSCAN and Hierarchical clustering compared on real RFM behaviour, labelled in plain business language — Loyal High-Value, At-Risk, Big Spenders.</p>
+  </div>
+  <div class="feature-card">
+    <div class="f-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+    <h3>Churn Prediction</h3>
+    <p>Seven classifiers benchmarked on accuracy, recall and ROC-AUC, with SMOTE for the real-world class imbalance — the best model powers a live per-customer risk score.</p>
+  </div>
+  <div class="feature-card">
+    <div class="f-icon"><i class="fa-solid fa-chart-simple"></i></div>
+    <h3>Lifecycle Forecasting</h3>
+    <p>A genuine, real-data customer lifecycle revenue curve — backtested against a naive baseline — projects where spend is headed, no fabricated numbers.</p>
+  </div>
+  <div class="feature-card">
+    <div class="f-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+    <h3>Next-Best-Action</h3>
+    <p>Segment × risk combinations turn into concrete Indian-retail actions — a win-back coupon, a loyalty tier invite, a festive-season nudge — not just a score.</p>
+  </div>
+  <div class="feature-card">
+    <div class="f-icon"><i class="fa-solid fa-bag-shopping"></i></div>
+    <h3>Product Recommendations</h3>
+    <p>A hybrid k-Nearest-Neighbours + segment-affinity recommender surfaces what similar customers actually buy, with a plain-English reason for every suggestion.</p>
+  </div>
+  <div class="feature-card">
+    <div class="f-icon"><i class="fa-solid fa-file-lines"></i></div>
+    <h3>Reports &amp; Export</h3>
+    <p>One-click Excel and PDF exports of the full customer table and business recommendations, ready to hand to a marketing or retention team.</p>
+  </div>
+</section>
+
+<div class="landing-footer">RetailPulse India — a customer intelligence platform for Indian retail.</div>
+{% endblock %}

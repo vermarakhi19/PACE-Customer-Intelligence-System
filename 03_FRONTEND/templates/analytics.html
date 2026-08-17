@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block page_title %}Analytics{% endblock %}
+{% block content %}
+{% if not has_data %}
+<div class="panel empty-state"><i class="fa-solid fa-chart-line"></i><h3>No analytics data yet</h3><p>Run the pipeline first.</p></div>
+{% else %}
+<div class="row g-3">
+  <div class="col-lg-6"><div class="panel"><div class="panel-title"><i class="fa-solid fa-bag-shopping" style="color:var(--accent); font-size:13px;"></i> Preferred Order Category</div><canvas id="catChart"></canvas></div></div>
+  <div class="col-lg-6"><div class="panel"><div class="panel-title"><i class="fa-solid fa-credit-card" style="color:var(--indigo); font-size:13px;"></i> Preferred Payment Mode</div><canvas id="payChart"></canvas></div></div>
+  <div class="col-lg-6"><div class="panel"><div class="panel-title"><i class="fa-solid fa-indian-rupee-sign" style="color:var(--positive); font-size:13px;"></i> Average Annual Spend (₹) by State</div><canvas id="stateChart"></canvas></div></div>
+  <div class="col-lg-6"><div class="panel"><div class="panel-title"><i class="fa-solid fa-face-frown" style="color:var(--negative); font-size:13px;"></i> Churn Rate (%) by Satisfaction Score</div><canvas id="satChart"></canvas></div></div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if has_data %}
+<script>
+new Chart(document.getElementById('catChart'), { type: 'bar', data: { labels: {{ charts.category_dist.keys()|list|tojson }}, datasets: [{ data: {{ charts.category_dist.values()|list|tojson }}, backgroundColor: '#8B6BFF' }] }, options: { plugins: { legend: { display:false } } } });
+new Chart(document.getElementById('payChart'), { type: 'pie', data: { labels: {{ charts.payment_dist.keys()|list|tojson }}, datasets: [{ data: {{ charts.payment_dist.values()|list|tojson }}, backgroundColor: CHART_COLORS }] } });
+new Chart(document.getElementById('stateChart'), { type: 'bar', data: { labels: {{ charts.state_spend.keys()|list|tojson }}, datasets: [{ data: {{ charts.state_spend.values()|list|tojson }}, backgroundColor: '#2DD4E8' }] }, options: { indexAxis: 'y', plugins: { legend: { display:false } } } });
+new Chart(document.getElementById('satChart'), { type: 'line', data: { labels: {{ charts.satisfaction_churn.keys()|list|tojson }}, datasets: [{ label: 'Churn %', data: {{ charts.satisfaction_churn.values()|list|tojson }}, borderColor: '#FB7185', tension: 0.3 }] } });
+</script>
+{% endif %}
+{% endblock %}

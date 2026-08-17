@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block page_title %}Customer List{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="panel-title mb-0"><i class="fa-solid fa-users" style="color:var(--accent); font-size:13px;"></i> All Customers</div>
+    <div>
+      <a href="{{ url_for('export_excel') }}" class="btn btn-sm btn-success"><i class="fa-solid fa-file-excel"></i> Export Excel</a>
+      <a href="{{ url_for('export_pdf') }}" class="btn btn-sm btn-danger"><i class="fa-solid fa-file-pdf"></i> Export PDF</a>
+    </div>
+  </div>
+
+  {% if not has_data %}
+  <div class="empty-state"><i class="fa-solid fa-users"></i><h3>No customers yet</h3><p>Run the pipeline to populate customer data.</p></div>
+  {% else %}
+  <div class="table-responsive">
+    <table id="custTable" class="table table-hover align-middle" style="width:100%">
+      <thead>
+        <tr>
+          {% for c in columns %}<th>{{ c }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in customers %}
+        <tr>
+          {% for c in columns %}
+            <td>
+              {% if c == 'ChurnRiskBand' %}
+                <span class="badge-risk-{{ row[c]|lower }}">{{ row[c] }}</span>
+              {% elif c == 'SegmentName' %}
+                <span class="badge-segment">{{ row[c] }}</span>
+              {% elif c == 'EstimatedAnnualSpendINR' %}
+                ₹{{ "{:,.0f}".format(row[c]) }}
+              {% elif c == 'Churn' %}
+                {{ 'Churned' if row[c] == 1 else 'Retained' }}
+              {% else %}
+                {{ row[c] }}
+              {% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if has_data %}
+<script>
+$(document).ready(function () {
+  $('#custTable').DataTable({
+    pageLength: 10,
+    lengthMenu: [10, 25, 50, 100],
+    order: [],
+  });
+});
+</script>
+{% endif %}
+{% endblock %}

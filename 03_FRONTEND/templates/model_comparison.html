@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block page_title %}Model Comparison{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-title"><i class="fa-solid fa-scale-balanced" style="color:var(--accent); font-size:13px;"></i> Retention Prediction — All 7 Classifiers</div>
+  {% if not churn_metrics %}
+  <div class="empty-state"><i class="fa-solid fa-scale-balanced"></i><p>Run the pipeline to see model comparison.</p></div>
+  {% else %}
+  <div class="table-responsive">
+  <table class="table table-hover">
+    <thead><tr><th>Model</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1 Score</th><th>ROC-AUC</th></tr></thead>
+    <tbody>
+    {% for m in churn_metrics|sort(attribute='f1_score', reverse=true) %}
+      <tr class="{{ 'table-warning' if loop.first }}">
+        <td><strong>{{ m.model }}</strong> {% if loop.first %}<span class="badge-segment">Best</span>{% endif %}</td>
+        <td>{{ m.accuracy }}</td><td>{{ m.precision }}</td><td>{{ m.recall }}</td><td>{{ m.f1_score }}</td><td>{{ m.roc_auc }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+</div>
+<div class="panel">
+  <div class="panel-title"><i class="fa-solid fa-diagram-project" style="color:var(--positive); font-size:13px;"></i> Segmentation — All 3 Clustering Algorithms</div>
+  <table class="table"><thead><tr><th>Model</th><th>Clusters</th><th>Silhouette ↑</th><th>Davies-Bouldin ↓</th><th>Calinski-Harabasz ↑</th></tr></thead>
+  <tbody>
+  {% for m in seg_metrics %}
+    <tr><td>{{ m.model }}</td><td>{{ m.n_clusters }}</td><td>{{ m.silhouette or '—' }}</td><td>{{ m.davies_bouldin or '—' }}</td><td>{{ m.calinski_harabasz or '—' }}</td></tr>
+  {% endfor %}
+  </tbody></table>
+</div>
+{% endblock %}

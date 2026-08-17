@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% from "_components.html" import kpi_card, chart_panel, model_card, market_row, empty_state %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block header_extra %}
+<div class="dropdown range-dropdown d-none d-md-block">
+  <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+    <i class="fa-regular fa-calendar"></i> All-Time Snapshot
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><a class="dropdown-item active" href="#">All-Time Snapshot <i class="fa-solid fa-check" style="font-size:11px;"></i></a></li>
+    <li><a class="dropdown-item disabled" href="#" tabindex="-1">Last 30 Days <span class="soon">Needs order dates</span></a></li>
+    <li><a class="dropdown-item disabled" href="#" tabindex="-1">Last 90 Days <span class="soon">Needs order dates</span></a></li>
+  </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if not has_data %}
+  {{ empty_state('fa-database', 'No data yet',
+     'Place the dataset in data/raw/ and run python src/run_pipeline.py, then refresh this page.') }}
+{% else %}
+
+<div class="sync-row">
+  <div class="sync-indicator" id="syncRefresh" role="button" tabindex="0" title="Refresh dashboard">
+    <i class="fa-solid fa-arrows-rotate"></i> Last sync: {{ rendered_at }}
+  </div>
+</div>
+
+{# ---------- KPI ROW: 6 across, matching the reference ---------- #}
+<div class="kpi-row">
+  {{ kpi_card('Total Customers', '{:,}'.format(kpis.total_customers), 'fa-users',
+              tone='cyan', delta=deltas.get('customers'), delta_good='up',
+              spark_id='sparkCustomers' if sparklines.get('customers') else None) }}
+
+  {{ kpi_card('Churn Rate', kpis.churn_rate ~ '%', 'fa-arrow-trend-down',
+              tone='red', delta_good='down',
+              footnote='{:,}'.format(kpis.high_risk_count) ~ ' flagged high-risk') }}
+
+  {{ kpi_card('Avg Satisfaction', kpis.avg_satisfaction ~ '/5', 'fa-star',
+              tone='violet', stars=kpis.avg_satisfaction) }}
+
+  {{ kpi_card('Segments', kpis.total_segments, 'fa-layer-group',
+              tone='green', footnote='Discovered by ' ~ kpis.best_seg_model) }}
+
+  {{ kpi_card('High Risk Customers', '{:,}'.format(kpis.high_risk_count), 'fa-triangle-exclamation',
+              tone='red',
+              footnote=((kpis.high_risk_count / kpis.total_customers * 100) | round(1) ~ '% of customer base') if kpis.total_customers else None) }}
+
+  {{ kpi_card('Avg Annual Spend', '₹' ~ '{:,.0f}'.format(kpis.avg_spend), 'fa-indian-rupee-sign',
+              tone='green', delta=deltas.get('spend'), delta_good='up',
+              spark_id='sparkSpend' if sparklines.get('spend') else None) }}
+</div>
+
+{# ---------- 3-COLUMN CHART ROW ---------- #}
+<div class="chart-grid">
+
+  {% call chart_panel('Customer Segments', 'fa-layer-group', url_for('segmentation'), tone='violet') %}
+    <div class="donut-layout">
+      <div class="donut-canvas"><canvas id="segChart"></canvas></div>
+      <div class="donut-legend" id="segLegend"></div>
+    </div>
+  {% endcall %}
+
+  {% call chart_panel('Top Markets', 'fa-map-location-dot', url_for('analytics'), tone='cyan') %}
+    {% if top_markets %}
+      <div class="market-list">
+        {% for m in top_markets %}
+          {{ market_row(loop.index, m.name, m.customers, m.avg_spend, m.share_pct, m.get('avg_recency')) }}
+        {% endfor %}
+      </div>
+    {% else %}
+      {{ empty_state('fa-map-location-dot', 'No geography yet',
+         'Run the transactional loader to populate real customer geography from the dataset.') }}
+    {% endif %}
+  {% endcall %}
+
+  {% call chart_panel('Churn Risk Distribution', 'fa-triangle-exclamation', url_for('prediction'), tone='red') %}
+    <div class="hist-wrap" id="histWrap">
+      <div class="chart-box" style="height:238px;"><canvas id="riskHistChart"></canvas></div>
+      <div class="hist-threshold-line" id="thresholdLine"></div>
+      <div class="hist-threshold-label" id="thresholdLabel">Critical risk (66%)</div>
+    </div>
+  {% endcall %}
+
+</div>
+
+{# ---------- BEST PERFORMING MODELS — directly below the charts ---------- #}
+<div class="panel models-panel">
+  <div class="panel-title">
+    <i class="fa-solid fa-medal chip-violet"></i>
+    <span>Best Performing Models</span>
+    <span class="pill pill-tier">Evaluated on held-out test set</span>
+  </div>
+  <div class="models-grid">
+    {{ model_card('Retention Prediction', kpis.best_churn_model, 'fa-brain',
+        metrics=[
+          {'label': 'Accuracy',  'value': top_churn_model.accuracy  if top_churn_model else '—'},
+          {'label': 'Precision', 'value': top_churn_model.precision if top_churn_model else '—'},
+          {'label': 'Recall',    'value': top_churn_model.recall    if top_churn_model else '—'},
+          {'label': 'F1',        'value': top_churn_model.f1_score  if top_churn_model else '—'},
+          {'label': 'ROC-AUC',   'value': top_churn_model.roc_auc   if top_churn_model else '—'}
+        ] if top_churn_model else [],
+        tone='violet', champion=True) }}
+
+    {{ model_card('Segmentation', kpis.best_seg_model, 'fa-layer-group',
+        metrics=[
+          {'label': 'Clusters',       'value': top_seg_model.n_clusters      if top_seg_model else '—'},
+          {'label': 'Silhouette',     'value': top_seg_model.silhouette      or '—'},
+          {'label': 'Davies-Bouldin', 'value': top_seg_model.davies_bouldin  or '—'}
+        ] if top_seg_model else [],
+        tone='green', champion=False) }}
+  </div>
+  <p class="panel-note">
+    Clustering models are scored with Silhouette and Davies-Bouldin; classification metrics
+    such as ROC-AUC do not apply to unsupervised segmentation and are deliberately omitted.
+  </p>
+</div>
+{% endif %}
+{% endblock %}
+
+
+{% block scripts %}
+{% if has_data %}
+<script>
+document.getElementById('syncRefresh')?.addEventListener('click', () => location.reload());
+
+function initDashboardCharts() {
+  const segLabels  = {{ segment_counts.keys()|list|tojson }};
+  const segValues  = {{ segment_counts.values()|list|tojson }};
+  const histLabels = {{ churn_prob_hist.labels|tojson }};
+  const histCounts = {{ churn_prob_hist.counts|tojson }};
+  const riskSeries = [{{ risk_counts.get('Low', 0) }}, {{ risk_counts.get('Medium', 0) }}, {{ risk_counts.get('High', 0) }}];
+  const made = [];
+
+  function safeChart(id, config) {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    try { const c = new Chart(el, config); made.push(c); return c; }
+    catch (err) {
+      console.error('Chart failed for #' + id, err);
+      const box = el.closest('.chart-box, .spark-box, .donut-canvas');
+      if (box) box.innerHTML = '<div class="chart-fallback">Chart unavailable</div>';
+      return null;
+    }
+  }
+
+  // ---- Segment donut ----
+  safeChart('segChart', {
+    type: 'doughnut',
+    data: { labels: segLabels, datasets: [{ data: segValues, backgroundColor: CHART_COLORS, borderWidth: 0, hoverOffset: 8 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '66%',
+      animation: { animateRotate: true, duration: 900, easing: 'easeOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => {
+          const total = segValues.reduce((a,b)=>a+b, 0);
+          return `${ctx.label}: ${ctx.parsed.toLocaleString()} (${total ? Math.round(ctx.parsed/total*100) : 0}%)`;
+        }}}
+      }
+    }
+  });
+
+  const segTotal = segValues.reduce((a,b)=>a+b, 0);
+  const legendEl = document.getElementById('segLegend');
+  if (legendEl) {
+    legendEl.innerHTML = '';
+    segLabels.forEach((label, i) => {
+      const pct = segTotal ? Math.round(segValues[i]/segTotal*100) : 0;
+      const row = document.createElement('div');
+      row.className = 'leg-item';
+      row.innerHTML = `<span class="leg-dot" style="background:${CHART_COLORS[i % CHART_COLORS.length]}"></span>`
+                    + `<span class="leg-name">${label}</span><span class="leg-val">${pct}%</span>`;
+      legendEl.appendChild(row);
+    });
+  }
+
+  // ---- Churn risk histogram + trend overlay ----
+  safeChart('riskHistChart', {
+    data: {
+      labels: histLabels,
+      datasets: [
+        { type: 'bar', label: 'Customers', data: histCounts,
+          backgroundColor: 'rgba(139,107,255,0.40)', hoverBackgroundColor: 'rgba(139,107,255,0.65)',
+          borderRadius: 4, barPercentage: 0.9, categoryPercentage: 0.92, order: 2 },
+        { type: 'line', label: 'Trend', data: histCounts, borderColor: '#2DD4E8',
+          backgroundColor: 'rgba(45,212,232,0.10)', tension: 0.4, fill: true,
+          pointRadius: 0, pointHoverRadius: 4, order: 1 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 850, easing: 'easeOutQuart' },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          title: (items) => `Churn probability ${items[0].label}`,
+          label: (ctx) => ctx.datasetIndex === 0 ? `${ctx.parsed.y.toLocaleString()} customers` : null
+        }}
+      },
+      scales: {
+        x: { title: { display: true, text: 'Risk of churn', font: { size: 10 } },
+             ticks: { font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 6 },
+             grid: { display: false } },
+        y: { title: { display: true, text: 'No. customers', font: { size: 10 } }, beginAtZero: true }
+      }
+    }
+  });
+
+  if (histLabels.length) {
+    const line  = document.getElementById('thresholdLine');
+    const label = document.getElementById('thresholdLabel');
+    const pos   = 8 + 0.66 * (97 - 8);   // 0.66 = the real High-risk cutoff used by the pipeline
+    if (line)  line.style.left  = pos + '%';
+    if (label) label.style.left = pos + '%';
+  }
+
+  // ---- Sparklines ----
+  // NOTE: a sparkline is only drawn where a genuine ordered series exists.
+  // Cross-sectional counts are NOT plotted as if they were a time trend.
+  function spark(id, data, color) {
+    if (!data || data.length < 2) return;
+    safeChart(id, {
+      type: 'line',
+      data: { labels: data.map((_, i) => i),
+              datasets: [{ data, borderColor: color, backgroundColor: color + '22',
+                           fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, animation: { duration: 700 },
+                 plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                 scales: { x: { display: false }, y: { display: false } } }
+    });
+  }
+  {% if sparklines.get('customers') %}spark('sparkCustomers', {{ sparklines['customers']|tojson }}, '#2DD4E8');{% endif %}
+  {% if sparklines.get('spend') %}spark('sparkSpend', {{ sparklines['spend']|tojson }}, '#34D399');{% endif %}
+
+  setTimeout(() => made.forEach(c => { try { c.resize(); } catch (e) {} }), 200);
+}
+
+if (document.readyState === 'complete') initDashboardCharts();
+else window.addEventListener('load', initDashboardCharts);
+</script>
+{% endif %}
+{% endblock %}
