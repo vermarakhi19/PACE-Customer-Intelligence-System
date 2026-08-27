@@ -132,3 +132,42 @@
   <p>{{ body }}</p>
 </div>
 {% endmacro %}
+
+
+{# ---------------------------------------------------------------------------
+   COMPARISON METRIC — one Customer 360 "Comparison" row: this customer vs
+   segment / regional / overall averages, as four scaled bars sharing one
+   max so relative size is honest. `m` is one entry from customer360_service's
+   comparison block (label, unit, format, max_value, customer, segment_avg,
+   regional_avg, overall_avg already computed server-side).
+--------------------------------------------------------------------------- #}
+{% macro _fmt(val, format) %}
+  {%- if val is none -%}—
+  {%- elif format == 'currency' -%}₹{{ "{:,.0f}".format(val) }}
+  {%- elif format == 'percent' -%}{{ "%.1f"|format(val * 100) }}%
+  {%- elif format == 'days' -%}{{ "%.1f"|format(val) }}d
+  {%- else -%}{{ "%.1f"|format(val) }}
+  {%- endif -%}
+{% endmacro %}
+
+{% macro comparison_metric(m) %}
+<div class="comparison-metric">
+  <div class="comparison-metric-head">
+    <div class="comparison-metric-title">{{ m.label }}</div>
+  </div>
+  <div class="comparison-rows">
+    {% for key, cls, rowlabel in [('customer','is-customer','This Customer'), ('segment_avg','is-segment','Segment Avg'), ('regional_avg','is-regional','Regional Avg'), ('overall_avg','is-overall','Overall Avg')] %}
+      {% set val = m[key] %}
+      <div class="comparison-row {{ cls }}">
+        <div class="comparison-row-label">{{ rowlabel }}</div>
+        <div class="comparison-bar-track">
+          {% if val is not none %}
+          <span class="comparison-bar-fill" style="width: {{ (val / m.max_value * 100) if m.max_value else 0 }}%"></span>
+          {% endif %}
+        </div>
+        <div class="comparison-row-value">{{ _fmt(val, m.format) }}</div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endmacro %}

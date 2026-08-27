@@ -40,6 +40,9 @@ ROUTES_GET = [
     "/reports", "/analytics", "/model-comparison", "/forecasting",
     "/recommendations", "/settings", "/api/customers",
     "/export/excel", "/export/pdf", "/static/css/style.css", "/static/js/main.js",
+    # Explainable AI / Revenue at Risk / Retention Simulator / Customer 360
+    "/customer360", "/customer360?q=50001", "/customer/50001",
+    "/revenue-at-risk", "/retention-simulator", "/retention-simulator?customer_id=50001",
 ]
 
 
@@ -62,6 +65,32 @@ def run():
         print(f"{'OK  ' if ok else 'FAIL'}  GET {path:25s} -> {r.status_code}")
         if not ok:
             failures.append((f"GET {path}", r.status_code))
+
+    # --- Retention Action Simulator API (individual + group modes) ---
+    r = client.post("/api/simulate", json={"mode": "customer", "customer_id": 50001})
+    ok = r.status_code == 200 and r.get_json().get("results")
+    print(f"{'OK  ' if ok else 'FAIL'}  POST /api/simulate (customer) -> {r.status_code}")
+    if not ok:
+        failures.append(("POST /api/simulate (customer)", r.status_code))
+
+    r = client.post("/api/simulate", json={"mode": "group", "risk_band": "High"})
+    ok = r.status_code == 200 and r.get_json().get("results")
+    print(f"{'OK  ' if ok else 'FAIL'}  POST /api/simulate (group) -> {r.status_code}")
+    if not ok:
+        failures.append(("POST /api/simulate (group)", r.status_code))
+
+    r = client.post("/api/simulate", json={"mode": "customer", "customer_id": 99999999})
+    ok = r.status_code == 404
+    print(f"{'OK  ' if ok else 'FAIL'}  POST /api/simulate (unknown customer -> 404) -> {r.status_code}")
+    if not ok:
+        failures.append(("POST /api/simulate (unknown customer)", r.status_code))
+
+    # --- Customer 360 with a missing customer should redirect, not 500 ---
+    r = client.get("/customer/99999999")
+    ok = r.status_code in (200, 302)
+    print(f"{'OK  ' if ok else 'FAIL'}  GET /customer/99999999 (missing -> redirect) -> {r.status_code}")
+    if not ok:
+        failures.append(("GET /customer/99999999", r.status_code))
 
     r = client.get("/logout")
     if r.status_code not in (200, 302):

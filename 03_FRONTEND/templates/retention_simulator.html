@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% from "_components.html" import empty_state %}
+{% block page_title %}Retention Action Simulator{% endblock %}
+{% block content %}
+
+{% if not has_data %}
+  {{ empty_state('fa-flask', 'No data yet', 'Run the pipeline to populate customer data.') }}
+{% else %}
+
+<div class="assumption-note">
+  <i class="fa-solid fa-flask"></i>
+  <div>
+    <strong>Scenario estimates, not guarantees.</strong>
+    {{ assumptions_note }}
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title"><i class="fa-solid fa-sliders" style="color:var(--accent); font-size:13px;"></i> Simulation Setup</div>
+
+  <ul class="nav nav-pills mb-3" id="modeTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="tab-customer" data-mode="customer" type="button">Individual Customer</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-group" data-mode="group" type="button">Customer Group</button>
+    </li>
+  </ul>
+
+  <div id="panel-customer">
+    <div class="row g-3 align-items-end">
+      <div class="col-sm-4">
+        <label class="form-label">Customer ID</label>
+        <input type="number" id="customerIdInput" class="form-control" placeholder="e.g. 50001" value="{{ prefill_customer_id or '' }}">
+      </div>
+    </div>
+  </div>
+
+  <div id="panel-group" style="display:none;">
+    <div class="row g-3">
+      <div class="col-sm-4">
+        <label class="form-label">Segment</label>
+        <select id="segmentSelect" class="form-select">
+          <option value="">All segments</option>
+          {% for s in segments %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-sm-4">
+        <label class="form-label">Risk Band</label>
+        <select id="riskBandSelect" class="form-select">
+          <option value="">All risk bands</option>
+          {% for r in risk_bands %}<option value="{{ r }}">{{ r }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-sm-4">
+        <label class="form-label">State</label>
+        <select id="stateSelect" class="form-select">
+          <option value="">All states</option>
+          {% for s in states %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+  <label class="form-label">Actions to Compare</label>
+  <div class="action-picker mb-3">
+    {% for a in actions %}
+    <label class="action-check">
+      <input type="checkbox" class="action-cb" value="{{ a.key }}" {{ 'checked' if a.key != 'no_action' }}>
+      <span>{{ a.label }}</span>
+    </label>
+    {% endfor %}
+  </div>
+
+  <button id="runSimBtn" class="btn btn-primary"><i class="fa-solid fa-play"></i> Run Simulation</button>
+  <span id="simStatus" class="text-muted ms-2" style="font-size:12.5px;"></span>
+</div>
+
+<div id="resultsPanel" class="panel" style="display:none;">
+  <div class="panel-title"><i class="fa-solid fa-chart-column" style="color:var(--positive); font-size:13px;"></i> Simulation Results</div>
+  <div id="resultsMeta" class="text-muted mb-3" style="font-size:12.5px;"></div>
+  <div id="resultsGrid" class="sim-results-grid"></div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if has_data %}
+<script>
+(function () {
+  const tabCustomer = document.getElementById('tab-customer');
+  const tabGroup = document.getElementById('tab-group');
+  const panelCustomer = document.getElementById('panel-customer');
+  const panelGroup = document.getElementById('panel-group');
+  let mode = 'customer';
+
+  tabCustomer.addEventListener('click', () => setMode('customer'));
+  tabGroup.addEventListener('click', () => setMode('group'));
+
+  function setMode(m) {
+    mode = m;
+    tabCustomer.classList.toggle('active', m === 'customer');
+    tabGroup.classList.toggle('active', m === 'group');
+    panelCustomer.style.display = m === 'customer' ? '' : 'none';
+    panelGroup.style.display = m === 'group' ? '' : 'none';
+  }
+
+  const runBtn = document.getElementById('runSimBtn');
+  const statusEl = document.getElementById('simStatus');
+  const resultsPanel = document.getElementById('resultsPanel');
+  const resultsMeta = document.getElementById('resultsMeta');
+  const resultsGrid = document.getElementById('resultsGrid');
+
+  function fmtINR(v) { return '₹' + Math.round(v).toLocaleString('en-IN'); }
+
+  function renderCustomerResults(data) {
+    resultsMeta.textContent = `Customer ${data.customer_id}`;
+    resultsGrid.innerHTML = data.results.map(r => `
+      <div class="sim-result-card ${r.is_best ? 'is-best' : ''}">
+        ${r.is_best ? '<span class="best-tag">Best option</span>' : ''}
+        <div class="sim-result-head"><span class="sim-result-title">${r.label}</span></div>
+        <div class="sim-result-desc">${r.description}</div>
+        <div class="sim-metric-grid">
+          <div><div class="sim-metric-label">Current Churn Prob.</div><div class="sim-metric-value">${r.current_churn_probability}%</div></div>
+          <div><div class="sim-metric-label">Projected Churn Prob.</div><div class="sim-metric-value positive">${r.projected_churn_probability}%</div></div>
+          <div><div class="sim-metric-label">Action Cost</div><div class="sim-metric-value">${fmtINR(r.action_cost)}</div></div>
+          <div><div class="sim-metric-label">Retained Value</div><div class="sim-metric-value positive">${fmtINR(r.estimated_retained_value)}</div></div>
+          <div><div class="sim-metric-label">Net Benefit</div><div class="sim-metric-value ${r.net_benefit >= 0 ? 'positive' : 'negative'}">${fmtINR(r.net_benefit)}</div></div>
+          <div><div class="sim-metric-label">ROI</div><div class="sim-metric-value">${r.roi !== null ? r.roi + 'x' : '—'}</div></div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderGroupResults(data) {
+    resultsMeta.textContent = `${data.customer_count} customers in this group`;
+    resultsGrid.innerHTML = data.results.map(r => `
+      <div class="sim-result-card ${r.is_best ? 'is-best' : ''}">
+        ${r.is_best ? '<span class="best-tag">Best option</span>' : ''}
+        <div class="sim-result-head"><span class="sim-result-title">${r.label}</span></div>
+        <div class="sim-result-desc">${r.description} — targeting ${r.customers_targeted} customers</div>
+        <div class="sim-metric-grid">
+          <div><div class="sim-metric-label">Avg Retention Improvement</div><div class="sim-metric-value">+${r.avg_retention_improvement_pp}pp</div></div>
+          <div><div class="sim-metric-label">Total Cost</div><div class="sim-metric-value">${fmtINR(r.total_action_cost)}</div></div>
+          <div><div class="sim-metric-label">Total Retained Value</div><div class="sim-metric-value positive">${fmtINR(r.total_estimated_retained_value)}</div></div>
+          <div><div class="sim-metric-label">Total Net Benefit</div><div class="sim-metric-value ${r.total_net_benefit >= 0 ? 'positive' : 'negative'}">${fmtINR(r.total_net_benefit)}</div></div>
+          <div><div class="sim-metric-label">ROI</div><div class="sim-metric-value">${r.roi !== null ? r.roi + 'x' : '—'}</div></div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  runBtn.addEventListener('click', async () => {
+    const actionKeys = Array.from(document.querySelectorAll('.action-cb:checked')).map(cb => cb.value);
+    if (!actionKeys.length) { statusEl.textContent = 'Select at least one action.'; return; }
+
+    let payload;
+    if (mode === 'customer') {
+      const cid = document.getElementById('customerIdInput').value;
+      if (!cid) { statusEl.textContent = 'Enter a Customer ID.'; return; }
+      payload = { mode: 'customer', customer_id: cid, action_keys: actionKeys };
+    } else {
+      payload = {
+        mode: 'group', action_keys: actionKeys,
+        segment: document.getElementById('segmentSelect').value,
+        risk_band: document.getElementById('riskBandSelect').value,
+        state: document.getElementById('stateSelect').value,
+      };
+    }
+
+    statusEl.textContent = 'Running...';
+    runBtn.disabled = true;
+    try {
+      const resp = await fetch('{{ url_for("api_simulate") }}', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await resp.json();
+      if (!resp.ok) { statusEl.textContent = data.error || 'Simulation failed.'; return; }
+
+      statusEl.textContent = '';
+      resultsPanel.style.display = '';
+      if (mode === 'customer') renderCustomerResults(data); else renderGroupResults(data);
+      resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (e) {
+      statusEl.textContent = 'Network error running simulation.';
+    } finally {
+      runBtn.disabled = false;
+    }
+  });
+
+  {% if prefill_customer_id %}
+  runBtn.click();
+  {% endif %}
+})();
+</script>
+{% endif %}
+{% endblock %}

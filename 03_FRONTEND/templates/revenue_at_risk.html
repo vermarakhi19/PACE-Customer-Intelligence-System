@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% from "_components.html" import kpi_card, chart_panel, empty_state %}
+{% block page_title %}Revenue at Risk{% endblock %}
+{% block content %}
+
+{% if not summary.has_data %}
+  {{ empty_state('fa-indian-rupee-sign', 'No data yet', 'Run the pipeline to populate customer data.') }}
+{% else %}
+
+<div class="assumption-note">
+  <i class="fa-solid fa-circle-info"></i>
+  <div>
+    <strong>Estimated potential revenue exposure, not a guaranteed future loss.</strong>
+    Revenue at Risk = Estimated Annual Spend × Churn Probability, computed per customer from the existing
+    churn model output and spend data — a transparent expected-value calculation, not a new prediction.
+    "Critical" risk is a configurable {{ summary.critical_threshold_pct|int }}%+ probability cut-off layered on
+    top of the pipeline's existing High risk band for reporting purposes only.
+  </div>
+</div>
+
+<div class="kpi-row">
+  {{ kpi_card('Total Revenue at Risk', '₹' ~ '{:,.0f}'.format(summary.total_revenue_at_risk), 'fa-indian-rupee-sign', tone='red') }}
+  {{ kpi_card('High Risk Revenue', '₹' ~ '{:,.0f}'.format(summary.high_risk_revenue), 'fa-triangle-exclamation', tone='red',
+              footnote='{:,}'.format(summary.high_risk_customers) ~ ' customers') }}
+  {{ kpi_card('Critical Risk Revenue', '₹' ~ '{:,.0f}'.format(summary.critical_risk_revenue), 'fa-fire', tone='red',
+              footnote='{:,}'.format(summary.critical_risk_customers) ~ (' customers ≥%d%%'|format(summary.critical_threshold_pct|int))) }}
+  {{ kpi_card('At-Risk Customers', '{:,}'.format(summary.at_risk_customers), 'fa-users', tone='violet',
+              footnote=((summary.at_risk_customers / summary.total_customers * 100) | round(1) ~ '% of customer base') if summary.total_customers else None) }}
+</div>
+
+<div class="chart-grid">
+  {% call chart_panel('Revenue at Risk by Risk Band', 'fa-layer-group', tone='red') %}
+    {% if summary.by_risk_band %}
+    {% set max_val = (summary.by_risk_band | max(attribute='revenue_at_risk')).revenue_at_risk %}
+    <div class="market-list">
+      {% for row in summary.by_risk_band %}
+      <div class="market-row">
+        <div class="market-main">
+          <div class="market-head">
+            <span class="market-name"><span class="badge-risk-{{ row.name|lower }}">{{ row.name }}</span></span>
+            <span class="market-count">₹{{ "{:,.0f}".format(row.revenue_at_risk) }}</span>
+          </div>
+          <div class="rar-mini-bar"><span style="width: {{ (row.revenue_at_risk / max_val * 100) if max_val else 0 }}%"></span></div>
+          <div class="market-meta"><span>{{ row.customers }} customers</span><span>Avg churn prob <b>{{ row.avg_churn_probability }}%</b></span></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endcall %}
+
+  {% call chart_panel('Revenue at Risk by Segment', 'fa-chart-pie', url_for('segmentation'), tone='violet') %}
+    {% if summary.by_segment %}
+    {% set max_val = (summary.by_segment | max(attribute='revenue_at_risk')).revenue_at_risk %}
+    <div class="market-list">
+      {% for row in summary.by_segment %}
+      <div class="market-row">
+        <div class="market-main">
+          <div class="market-head">
+            <span class="market-name">{{ row.name }}</span>
+            <span class="market-count">₹{{ "{:,.0f}".format(row.revenue_at_risk) }}</span>
+          </div>
+          <div class="rar-mini-bar"><span style="width: {{ (row.revenue_at_risk / max_val * 100) if max_val else 0 }}%"></span></div>
+          <div class="market-meta"><span>{{ row.customers }} customers</span></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endcall %}
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="panel h-100">
+      <div class="panel-title"><i class="fa-solid fa-map-location-dot" style="color:var(--cyan); font-size:13px;"></i> Revenue at Risk by State</div>
+      <div class="table-responsive">
+        <table class="table table-sm rar-table">
+          <thead><tr><th>State</th><th>Customers</th><th>Revenue at Risk</th></tr></thead>
+          <tbody>
+            {% for row in summary.by_state %}
+            <tr><td>{{ row.name }}</td><td>{{ row.customers }}</td><td>₹{{ "{:,.0f}".format(row.revenue_at_risk) }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="panel h-100">
+      <div class="panel-title"><i class="fa-solid fa-city" style="color:var(--cyan); font-size:13px;"></i> Revenue at Risk by City</div>
+      <div class="table-responsive">
+        <table class="table table-sm rar-table">
+          <thead><tr><th>City</th><th>Customers</th><th>Revenue at Risk</th></tr></thead>
+          <tbody>
+            {% for row in summary.by_city %}
+            <tr><td>{{ row.name }}</td><td>{{ row.customers }}</td><td>₹{{ "{:,.0f}".format(row.revenue_at_risk) }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endif %}
+{% endblock %}

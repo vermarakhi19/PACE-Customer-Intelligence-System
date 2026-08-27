@@ -924,3 +924,143 @@ table.dataTable { color: var(--text); }
 @keyframes growBar { from { transform: scaleX(0); transform-origin: left; } to { transform: scaleX(1); } }
 .market-meta { display: flex; gap: 16px; font-size: 11px; color: var(--text-tertiary); }
 .market-meta b { color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; }
+
+/* ============================================================
+   Explainable AI / Revenue at Risk / Retention Simulator /
+   Customer 360 — shared components
+   ============================================================ */
+
+/* ---- Assumption / methodology note banner ---- */
+.assumption-note {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: var(--warning-soft); color: var(--text-secondary);
+  border: 1px solid rgba(251,191,36,0.25); border-radius: var(--radius-sm);
+  padding: 12px 14px; font-size: 12.5px; line-height: 1.6; margin-bottom: 16px;
+}
+.assumption-note i { color: var(--warning); margin-top: 2px; }
+.assumption-note strong { color: var(--text); }
+
+/* ---- Customer 360: header / identity ---- */
+.c360-header { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-bottom: 4px; }
+.c360-avatar {
+  width: 56px; height: 56px; border-radius: 16px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--gradient-soft); color: var(--violet);
+  font-size: 20px; font-weight: 700; font-family: 'Space Grotesk', sans-serif;
+}
+.c360-name { font-size: 19px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+.c360-meta { font-size: 12.5px; color: var(--text-secondary); margin-top: 2px; }
+.c360-meta span + span::before { content: "•"; margin: 0 7px; color: var(--text-tertiary); }
+
+.tier-badge {
+  display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px;
+  border-radius: var(--radius-pill); font-size: 11.5px; font-weight: 700;
+  letter-spacing: .02em; border: 1px solid transparent;
+}
+.tier-platinum { background: rgba(196,207,224,0.16); color: #C4CFE0; border-color: rgba(196,207,224,0.3); }
+.tier-gold     { background: var(--warning-soft); color: var(--warning); border-color: rgba(251,191,36,0.3); }
+.tier-silver   { background: rgba(166,174,196,0.16); color: var(--text-secondary); border-color: var(--border-strong); }
+.tier-bronze   { background: rgba(205,127,50,0.14); color: #CD7F32; border-color: rgba(205,127,50,0.3); }
+
+/* ---- Health score gauge ---- */
+.health-gauge { display: flex; align-items: center; gap: 12px; }
+.health-gauge-ring {
+  width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; position: relative;
+  background: conic-gradient(var(--gauge-color, var(--violet)) calc(var(--pct, 0) * 1%), var(--surface-3) 0);
+}
+.health-gauge-ring::before {
+  content: ""; position: absolute; inset: 6px; border-radius: 50%; background: var(--surface-solid);
+}
+.health-gauge-value {
+  position: relative; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 15px;
+}
+.health-gauge-label { font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: .04em; }
+
+/* ---- Stat grid (Behaviour section) ---- */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.stat-tile { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; }
+.stat-tile-label { font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 5px; }
+.stat-tile-value { font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 700; }
+
+/* ---- SHAP factor bars ---- */
+.shap-factor-list { display: flex; flex-direction: column; gap: 9px; }
+.shap-factor { display: grid; grid-template-columns: 1fr 90px; align-items: center; gap: 10px; }
+.shap-factor-label { font-size: 12.5px; color: var(--text-secondary); }
+.shap-factor-track { position: relative; height: 8px; background: var(--surface-3); border-radius: 4px; grid-column: 1 / -1; overflow: hidden; }
+.shap-factor-fill { position: absolute; top: 0; bottom: 0; border-radius: 4px; }
+.shap-factor-fill.risk-up { background: var(--danger); left: 50%; }
+.shap-factor-fill.risk-down { background: var(--success); right: 50%; }
+.shap-factor-value { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; text-align: right; color: var(--text-tertiary); }
+.shap-legend { display: flex; gap: 18px; font-size: 11.5px; color: var(--text-tertiary); margin-top: 10px; }
+.shap-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.shap-legend i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+.explanation-callout {
+  background: var(--gradient-soft); border: 1px solid rgba(139,107,255,0.22); border-radius: var(--radius-sm);
+  padding: 13px 15px; font-size: 13.5px; line-height: 1.65; color: var(--text); margin-bottom: 14px;
+}
+
+/* ---- Comparison bars (segment / regional / overall) ---- */
+.comparison-metric + .comparison-metric { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.comparison-metric-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.comparison-metric-title { font-size: 13px; font-weight: 600; }
+.comparison-rows { display: flex; flex-direction: column; gap: 6px; }
+.comparison-row { display: grid; grid-template-columns: 84px 1fr 70px; align-items: center; gap: 9px; }
+.comparison-row-label { font-size: 11px; color: var(--text-tertiary); }
+.comparison-bar-track { height: 7px; border-radius: 4px; background: var(--surface-3); overflow: hidden; }
+.comparison-bar-fill { display: block; height: 100%; border-radius: 4px; }
+.comparison-row.is-customer .comparison-bar-fill { background: var(--gradient); }
+.comparison-row.is-segment .comparison-bar-fill { background: var(--cyan); opacity: .8; }
+.comparison-row.is-regional .comparison-bar-fill { background: var(--success); opacity: .8; }
+.comparison-row.is-overall .comparison-bar-fill { background: var(--text-tertiary); opacity: .55; }
+.comparison-row-value { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; text-align: right; }
+
+/* ---- Revenue at Risk ---- */
+.rar-table td, .rar-table th { font-size: 12.5px; }
+.rar-bar-cell { display: flex; align-items: center; gap: 8px; }
+.rar-mini-bar { flex: 1; height: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; min-width: 60px; }
+.rar-mini-bar > span { display: block; height: 100%; border-radius: 3px; background: var(--gradient); }
+
+/* ---- Retention Simulator ---- */
+.action-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.action-check {
+  display: flex; align-items: center; gap: 9px; padding: 10px 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; font-size: 12.5px; transition: border-color .15s;
+}
+.action-check:has(input:checked) { border-color: var(--violet); background: var(--gradient-soft); }
+.action-check input { accent-color: var(--violet); }
+.sim-result-card {
+  border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px;
+  background: var(--surface-2); position: relative;
+}
+.sim-result-card.is-best { border-color: rgba(52,211,153,0.5); background: var(--success-soft); }
+.sim-result-card .best-tag {
+  position: absolute; top: -9px; right: 12px; background: var(--success); color: #06281C;
+  font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: var(--radius-pill);
+}
+.sim-result-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.sim-result-title { font-weight: 700; font-size: 14px; }
+.sim-result-desc { font-size: 11.5px; color: var(--text-tertiary); margin-bottom: 10px; }
+.sim-metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+.sim-metric-label { font-size: 10.5px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: .03em; }
+.sim-metric-value { font-family: 'JetBrains Mono', monospace; font-size: 13.5px; font-weight: 700; }
+.sim-metric-value.positive { color: var(--success); }
+.sim-metric-value.negative { color: var(--danger); }
+.sim-results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+
+/* ---- Priority actions (dashboard) ---- */
+.priority-list { display: flex; flex-direction: column; gap: 3px; }
+.priority-row {
+  display: flex; align-items: center; gap: 12px; padding: 11px 10px; border-radius: var(--radius-sm);
+  text-decoration: none; color: inherit; transition: background .15s;
+}
+.priority-row:hover { background: var(--surface-2); }
+.priority-rank { width: 22px; height: 22px; border-radius: 7px; background: var(--danger-soft); color: var(--danger);
+  display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.priority-main { flex: 1; min-width: 0; }
+.priority-name { font-size: 13px; font-weight: 600; }
+.priority-sub { font-size: 11px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.priority-value { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: var(--danger); text-align: right; flex-shrink: 0; }
+
+.row-action-link { color: var(--violet); text-decoration: none; font-size: 12px; white-space: nowrap; }
+.row-action-link:hover { text-decoration: underline; }

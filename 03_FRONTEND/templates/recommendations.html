@@ -34,6 +34,7 @@
           <th>Recommended #1</th>
           <th>Recommended #2</th>
           <th>Reason</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -46,6 +47,7 @@
           <td>{{ row.RecommendedCategory1 }}{% if row.Confidence1 %} <span class="text-muted">({{ row.Confidence1 }}%)</span>{% endif %}</td>
           <td>{{ row.RecommendedCategory2 }}{% if row.Confidence2 %} <span class="text-muted">({{ row.Confidence2 }}%)</span>{% endif %}</td>
           <td style="font-size:12.5px;">{{ row.Reason }}</td>
+          <td><a href="{{ url_for('customer360', customer_id=row.CustomerID) }}" class="row-action-link"><i class="fa-solid fa-id-card-clip"></i> 360</a></td>
         </tr>
         {% endfor %}
       </tbody>

@@ -52,6 +52,58 @@
               spark_id='sparkSpend' if sparklines.get('spend') else None) }}
 </div>
 
+{# ---------- BUSINESS IMPACT ROW: Revenue at Risk + priority actions ---------- #}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="panel h-100">
+      <div class="panel-title">
+        <i class="fa-solid fa-indian-rupee-sign" style="color:var(--danger); font-size:13px;"></i>
+        <span>Revenue at Risk</span>
+        <a class="panel-link" href="{{ url_for('revenue_at_risk') }}" aria-label="Open Revenue at Risk"><i class="fa-solid fa-chevron-right"></i></a>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div>
+          <div class="kpi-label">Total (estimated exposure)</div>
+          <div class="kpi-value" style="font-size:22px;">₹{{ "{:,.0f}".format(revenue_summary.total_revenue_at_risk) }}</div>
+        </div>
+        <div style="display:flex; gap:24px;">
+          <div><div class="kpi-label">Critical</div><div class="kpi-value" style="font-size:16px; color:var(--danger);">₹{{ "{:,.0f}".format(revenue_summary.critical_risk_revenue) }}</div></div>
+          <div><div class="kpi-label">Retention Opportunity</div><div class="kpi-value" style="font-size:16px; color:var(--success);">₹{{ "{:,.0f}".format(retention_opportunity.opportunity_value) }}</div></div>
+        </div>
+        <p class="text-muted" style="font-size:11px; margin:0;">
+          Opportunity = estimated retained value if the best-performing simulated action ({{ retention_opportunity.best_action_label or '—' }})
+          were applied to all {{ retention_opportunity.customers }} Medium/High-risk customers — a scenario estimate, not a guarantee.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="panel h-100">
+      <div class="panel-title">
+        <i class="fa-solid fa-list-check" style="color:var(--warning); font-size:13px;"></i>
+        <span>AI Priority Actions</span>
+        <span class="pill pill-tier">Highest revenue at risk, High-risk band</span>
+      </div>
+      {% if priority_customers %}
+      <div class="priority-list">
+        {% for c in priority_customers %}
+        <a href="{{ url_for('customer360', customer_id=c.CustomerID) }}" class="priority-row">
+          <div class="priority-rank">{{ loop.index }}</div>
+          <div class="priority-main">
+            <div class="priority-name">{{ c.CustomerName }} <span class="text-muted" style="font-weight:400;">#{{ c.CustomerID }}</span></div>
+            <div class="priority-sub">{{ c.RecommendedAction }}</div>
+          </div>
+          <div class="priority-value">₹{{ "{:,.0f}".format(c.RevenueAtRisk) }}</div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      {{ empty_state('fa-list-check', 'No priority actions', 'No high-risk customers found.') }}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
 {# ---------- 3-COLUMN CHART ROW ---------- #}
 <div class="chart-grid">
 

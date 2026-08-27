@@ -35,6 +35,10 @@
       {% else %}
       <div class="empty-state"><i class="fa-solid fa-wand-magic-sparkles"></i><p>Fill the form to see a live prediction from the best-performing model.</p></div>
       {% endif %}
+      <p class="text-muted mt-3" style="font-size:12px;">
+        Looking for a real customer instead of a what-if scenario?
+        <a href="{{ url_for('customer360_search') }}">Open Customer 360</a> for SHAP-explained predictions on actual customers.
+      </p>
     </div>
   </div>
 </div>

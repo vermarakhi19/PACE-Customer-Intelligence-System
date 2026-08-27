@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_components.html" import empty_state %}
+{% block page_title %}Customer 360{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-title"><i class="fa-solid fa-id-card-clip" style="color:var(--accent); font-size:13px;"></i> Find a Customer</div>
+  <p class="text-muted" style="font-size:13px;">
+    Search by Customer ID, name, or city to open a full 360° profile — churn prediction, SHAP explanation,
+    revenue at risk, recommendations, and retention scenarios in one place.
+  </p>
+  <form method="get" class="d-flex" style="gap:8px; max-width:420px;">
+    <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Customer ID, name, or city..." autofocus>
+    <button class="btn btn-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+  </form>
+</div>
+
+{% if not has_data %}
+  {{ empty_state('fa-database', 'No customer data yet', 'Run the pipeline to populate customer data.') }}
+{% elif query %}
+<div class="panel">
+  <div class="panel-title">Results for "{{ query }}"</div>
+  {% if results %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>Customer ID</th><th>Name</th><th>City</th><th>State</th><th>Segment</th><th>Risk</th><th></th></tr></thead>
+      <tbody>
+        {% for r in results %}
+        <tr>
+          <td>{{ r.CustomerID }}</td>
+          <td>{{ r.CustomerName }}</td>
+          <td>{{ r.City }}</td>
+          <td>{{ r.State }}</td>
+          <td><span class="badge-segment">{{ r.SegmentName }}</span></td>
+          <td><span class="badge-risk-{{ r.ChurnRiskBand|lower }}">{{ r.ChurnRiskBand }}</span></td>
+          <td><a href="{{ url_for('customer360', customer_id=r.CustomerID) }}" class="btn btn-sm btn-outline-light">Open 360 <i class="fa-solid fa-arrow-right"></i></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  {{ empty_state('fa-magnifying-glass', 'No matches', 'Try a different Customer ID, name, or city.') }}
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

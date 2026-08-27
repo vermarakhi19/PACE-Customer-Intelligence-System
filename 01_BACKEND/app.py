@@ -23,6 +23,7 @@ Data/reports/models paths are similarly updated to the new 04_DATA_TESTING/
 and 02_ML_AI/ locations. No route, template, or business logic changed.
 """
 import os
+import sys
 import io
 import json
 import joblib
@@ -39,6 +40,12 @@ REPORTS_DIR = os.path.join(BASE_DIR, "04_DATA_TESTING", "reports")
 MODELS_DIR = os.path.join(BASE_DIR, "02_ML_AI", "models")
 TEMPLATES_DIR = os.path.join(BASE_DIR, "03_FRONTEND", "templates")
 STATIC_DIR = os.path.join(BASE_DIR, "03_FRONTEND", "static")
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "services"))
+import explainability_service
+import revenue_service
+import simulator_service
+import customer360_service
 
 app = Flask(__name__, template_folder=TEMPLATES_DIR, static_folder=STATIC_DIR)
 app.secret_key = os.environ.get("SECRET_KEY", "pace-india-dev-secret-change-in-prod")
@@ -203,6 +210,10 @@ def dashboard():
     from datetime import datetime
     rendered_at = datetime.now().strftime("%d %b %Y, %I:%M %p")
 
+    revenue_summary = revenue_service.get_summary()
+    priority_customers = revenue_service.get_priority_customers(n=5)
+    retention_opportunity = simulator_service.estimate_retention_opportunity()
+
     return render_template(
         "dashboard.html", kpis=kpis, segment_counts=segment_counts,
         risk_counts=risk_counts, has_data=len(df) > 0,
@@ -210,7 +221,8 @@ def dashboard():
         top_churn_model=top_churn_model, top_seg_model=top_seg_model,
         sparklines=sparklines, deltas=deltas, rendered_at=rendered_at,
         has_transactions=has_transactions, tx_summary=tx_summary,
-        mom=mom,
+        mom=mom, revenue_summary=revenue_summary, priority_customers=priority_customers,
+        retention_opportunity=retention_opportunity,
     )
 
 
@@ -319,6 +331,80 @@ def recommendations():
         "recommendations.html", customers=records, affinity=affinity,
         search=search, has_data=len(get_recommendations_data()) > 0
     )
+
+
+@app.route("/customer360")
+@login_required
+def customer360_search():
+    query = request.args.get("q", "").strip()
+    results = customer360_service.search_customers(query) if query else []
+    df = get_final_data()
+    return render_template("customer360_search.html", query=query, results=results, has_data=len(df) > 0)
+
+
+@app.route("/customer/<int:customer_id>")
+@login_required
+def customer360(customer_id):
+    profile = customer360_service.get_customer_360(customer_id)
+    if profile is None:
+        flash(f"Customer {customer_id} not found.", "warning")
+        return redirect(url_for("customer360_search"))
+    return render_template("customer360.html", profile=profile, customer_id=customer_id)
+
+
+@app.route("/revenue-at-risk")
+@login_required
+def revenue_at_risk():
+    summary = revenue_service.get_summary()
+    return render_template("revenue_at_risk.html", summary=summary)
+
+
+@app.route("/retention-simulator")
+@login_required
+def retention_simulator():
+    df = get_final_data()
+    segments = sorted(df["SegmentName"].dropna().unique().tolist()) if "SegmentName" in df.columns and len(df) else []
+    states = sorted(df["State"].dropna().unique().tolist()) if "State" in df.columns and len(df) else []
+    actions = simulator_service.available_actions()
+    prefill_customer_id = request.args.get("customer_id", type=int)
+    return render_template(
+        "retention_simulator.html", segments=segments, states=states,
+        risk_bands=["Low", "Medium", "High"], actions=actions,
+        prefill_customer_id=prefill_customer_id, has_data=len(df) > 0,
+        assumptions_note=simulator_service.ASSUMPTIONS_NOTE,
+    )
+
+
+@app.route("/api/simulate", methods=["POST"])
+@login_required
+def api_simulate():
+    data = request.get_json(silent=True) or {}
+    mode = data.get("mode", "customer")
+    action_keys = data.get("action_keys") or None
+
+    if mode == "group":
+        filters = {
+            "segment": data.get("segment") or None,
+            "risk_band": data.get("risk_band") or None,
+            "state": data.get("state") or None,
+        }
+        result = simulator_service.simulate_group(filters, action_keys)
+        if result is None:
+            return jsonify({"error": "No customer data available."}), 404
+        return jsonify(result)
+
+    customer_id = data.get("customer_id")
+    if not customer_id:
+        return jsonify({"error": "customer_id is required for mode=customer"}), 400
+    try:
+        customer_id = int(customer_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "customer_id must be numeric"}), 400
+
+    result = simulator_service.simulate_customer(customer_id, action_keys)
+    if result is None:
+        return jsonify({"error": f"Customer {customer_id} not found."}), 404
+    return jsonify(result)
 
 
 @app.route("/settings")

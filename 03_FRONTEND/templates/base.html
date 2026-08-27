@@ -27,8 +27,11 @@
     <nav class="sidebar-nav">
       <a href="{{ url_for('dashboard') }}" class="nav-link {{ 'active' if request.endpoint=='dashboard' }}"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></a>
       <a href="{{ url_for('customers') }}" class="nav-link {{ 'active' if request.endpoint=='customers' }}"><i class="fa-solid fa-users"></i><span>Customer List</span></a>
+      <a href="{{ url_for('customer360_search') }}" class="nav-link {{ 'active' if request.endpoint in ('customer360_search', 'customer360') }}"><i class="fa-solid fa-id-card-clip"></i><span>Customer 360</span></a>
       <a href="{{ url_for('segmentation') }}" class="nav-link {{ 'active' if request.endpoint=='segmentation' }}"><i class="fa-solid fa-layer-group"></i><span>Segmentation</span></a>
       <a href="{{ url_for('prediction') }}" class="nav-link {{ 'active' if request.endpoint=='prediction' }}"><i class="fa-solid fa-bullseye"></i><span>Prediction</span></a>
+      <a href="{{ url_for('revenue_at_risk') }}" class="nav-link {{ 'active' if request.endpoint=='revenue_at_risk' }}"><i class="fa-solid fa-indian-rupee-sign"></i><span>Revenue at Risk</span></a>
+      <a href="{{ url_for('retention_simulator') }}" class="nav-link {{ 'active' if request.endpoint=='retention_simulator' }}"><i class="fa-solid fa-flask"></i><span>Retention Simulator</span></a>
       <a href="{{ url_for('analytics') }}" class="nav-link {{ 'active' if request.endpoint=='analytics' }}"><i class="fa-solid fa-chart-line"></i><span>Analytics</span></a>
       <a href="{{ url_for('forecasting') }}" class="nav-link {{ 'active' if request.endpoint=='forecasting' }}"><i class="fa-solid fa-chart-simple"></i><span>Forecasting</span></a>
       <a href="{{ url_for('recommendations') }}" class="nav-link {{ 'active' if request.endpoint=='recommendations' }}"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Recommendations</span></a>

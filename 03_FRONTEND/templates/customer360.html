@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% from "_components.html" import comparison_metric, empty_state %}
+{% block page_title %}Customer 360{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <div class="c360-header">
+    <div class="c360-avatar">{{ (profile.overview.name or '?')[:1]|upper }}</div>
+    <div style="flex:1; min-width:200px;">
+      <div class="c360-name">{{ profile.overview.name or ('Customer #' ~ profile.overview.customer_id) }}</div>
+      <div class="c360-meta">
+        <span>ID {{ profile.overview.customer_id }}</span>
+        {% if profile.overview.city %}<span>{{ profile.overview.city }}, {{ profile.overview.state }}</span>{% endif %}
+        {% if profile.overview.segment %}<span class="badge-segment">{{ profile.overview.segment }}</span>{% endif %}
+      </div>
+    </div>
+    {% if profile.overview.tier and profile.overview.tier != '—' %}
+    <span class="tier-badge tier-{{ profile.overview.tier|lower }}"><i class="fa-solid fa-gem"></i> {{ profile.overview.tier }} Tier</span>
+    {% endif %}
+    {% if profile.overview.risk_band %}
+    <span class="badge-risk-{{ profile.overview.risk_band|lower }}">{{ profile.overview.risk_band }} Risk</span>
+    {% endif %}
+    {% if profile.overview.health_score is not none %}
+    <div class="health-gauge">
+      <div class="health-gauge-ring" style="--pct: {{ profile.overview.health_score }}; --gauge-color: {{ 'var(--success)' if profile.overview.health_score >= 60 else ('var(--warning)' if profile.overview.health_score >= 35 else 'var(--danger)') }};">
+        <div class="health-gauge-value">{{ profile.overview.health_score|round|int }}</div>
+      </div>
+      <div class="health-gauge-label">Health<br>Score</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="mt-3" style="display:flex; gap:32px; flex-wrap:wrap; align-items:center;">
+    <div>
+      <div class="kpi-label">Churn Probability</div>
+      <div class="kpi-value" style="font-size:24px;">{{ profile.overview.churn_probability }}%</div>
+    </div>
+    {% if profile.intelligence.revenue_at_risk %}
+    <div>
+      <div class="kpi-label">Revenue at Risk <span class="text-muted" style="font-weight:400;">(estimated)</span></div>
+      <div class="kpi-value" style="font-size:24px;">₹{{ "{:,.0f}".format(profile.intelligence.revenue_at_risk.revenue_at_risk) }}</div>
+    </div>
+    {% endif %}
+    <div class="ms-auto">
+      <a href="{{ url_for('retention_simulator', customer_id=profile.overview.customer_id) }}" class="btn btn-sm btn-primary">
+        <i class="fa-solid fa-flask"></i> Open in Retention Simulator
+      </a>
+    </div>
+  </div>
+</div>
+
+{# ---------------- Behaviour ---------------- #}
+<div class="panel">
+  <div class="panel-title"><i class="fa-solid fa-chart-simple" style="color:var(--cyan); font-size:13px;"></i> Behaviour</div>
+  <div class="stat-grid">
+    <div class="stat-tile"><div class="stat-tile-label">Recency</div><div class="stat-tile-value">{{ profile.behaviour.recency_days }}d</div></div>
+    <div class="stat-tile"><div class="stat-tile-label">Frequency</div><div class="stat-tile-value">{{ profile.behaviour.frequency }}</div></div>
+    <div class="stat-tile"><div class="stat-tile-label">Monetary Value</div><div class="stat-tile-value">₹{{ "{:,.0f}".format(profile.behaviour.monetary) }}</div></div>
+    <div class="stat-tile"><div class="stat-tile-label">Avg Order Value</div><div class="stat-tile-value">{{ '₹{:,.0f}'.format(profile.behaviour.avg_order_value) if profile.behaviour.avg_order_value is not none else '—' }}</div></div>
+    <div class="stat-tile"><div class="stat-tile-label">Satisfaction</div><div class="stat-tile-value">{{ profile.behaviour.satisfaction_score }}/5</div></div>
+    <div class="stat-tile"><div class="stat-tile-label">Engagement</div><div class="stat-tile-value">{{ profile.behaviour.engagement_score }}/100</div></div>
+    <div class="stat-tile"><div class="stat-tile-label">Tenure</div><div class="stat-tile-value">{{ profile.behaviour.tenure_months }}mo</div></div>
+    <div class="stat-tile"><div class="stat-tile-label">Order Count</div><div class="stat-tile-value">{{ profile.behaviour.order_count }}</div></div>
+    <div class="stat-tile"><div class="stat-tile-label">Days Since Last Order</div><div class="stat-tile-value">{{ profile.behaviour.day_since_last_order }}</div></div>
+    <div class="stat-tile"><div class="stat-tile-label">Complaint Raised</div><div class="stat-tile-value">{{ 'Yes' if profile.behaviour.complain else 'No' }}</div></div>
+    <div class="stat-tile"><div class="stat-tile-label">Preferred Category</div><div class="stat-tile-value" style="font-size:13.5px;">{{ profile.behaviour.preferred_category or '—' }}</div></div>
+    <div class="stat-tile"><div class="stat-tile-label">Preferred Payment</div><div class="stat-tile-value" style="font-size:13.5px;">{{ profile.behaviour.preferred_payment or '—' }}</div></div>
+  </div>
+</div>
+
+{# ---------------- Intelligence: Explainability ---------------- #}
+<div class="panel">
+  <div class="panel-title"><i class="fa-solid fa-brain" style="color:var(--violet); font-size:13px;"></i> Why This Prediction? (SHAP Explainability)</div>
+  {% if profile.intelligence.explanation %}
+    {% set exp = profile.intelligence.explanation %}
+    <div class="explanation-callout">{{ exp.explanation_text }}</div>
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div style="font-size:11.5px; font-weight:700; color:var(--danger); letter-spacing:.03em; margin-bottom:10px;">
+          <i class="fa-solid fa-arrow-trend-up"></i> TOP FACTORS INCREASING RISK
+        </div>
+        <div class="shap-factor-list">
+          {% for f in exp.top_increasing_factors %}
+          <div class="shap-factor">
+            <div class="shap-factor-label">{{ f.label }}</div>
+            <div class="shap-factor-value">+{{ "%.3f"|format(f.shap_value) }}</div>
+            <div class="shap-factor-track"><span class="shap-factor-fill risk-up" style="width: {{ f.bar_pct / 2 }}%"></span></div>
+          </div>
+          {% else %}
+          <p class="text-muted" style="font-size:12.5px;">No risk-increasing factors identified for this customer.</p>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div style="font-size:11.5px; font-weight:700; color:var(--success); letter-spacing:.03em; margin-bottom:10px;">
+          <i class="fa-solid fa-arrow-trend-down"></i> TOP FACTORS REDUCING RISK
+        </div>
+        <div class="shap-factor-list">
+          {% for f in exp.top_reducing_factors %}
+          <div class="shap-factor">
+            <div class="shap-factor-label">{{ f.label }}</div>
+            <div class="shap-factor-value">−{{ "%.3f"|format(-f.shap_value) }}</div>
+            <div class="shap-factor-track"><span class="shap-factor-fill risk-down" style="width: {{ f.bar_pct / 2 }}%"></span></div>
+          </div>
+          {% else %}
+          <p class="text-muted" style="font-size:12.5px;">No risk-reducing factors identified for this customer.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <p class="text-muted mt-3" style="font-size:11.5px;">
+      SHAP (SHapley Additive exPlanations) values from the trained {{ exp.risk_band and 'LightGBM' }} churn model —
+      each bar is that feature's real contribution to this customer's churn probability, not a heuristic.
+    </p>
+  {% else %}
+    {{ empty_state('fa-brain', 'Explanation unavailable', 'SHAP is not installed or the champion churn model has not been trained yet — run pip install shap and 02_ML_AI/run_pipeline.py.') }}
+  {% endif %}
+</div>
+
+{# ---------------- Intelligence: Recommendations + Revenue at Risk ---------------- #}
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="panel h-100">
+      <div class="panel-title"><i class="fa-solid fa-lightbulb" style="color:var(--warning); font-size:13px;"></i> Recommended Action</div>
+      {% if profile.intelligence.recommended_action %}
+        <p style="font-size:13.5px; line-height:1.6;">{{ profile.intelligence.recommended_action }}</p>
+      {% endif %}
+      {% set rec = profile.intelligence.recommended_categories %}
+      {% if rec %}
+        <hr>
+        <div class="panel-title" style="font-size:12px;"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent); font-size:12px;"></i> Category Recommendations</div>
+        <p style="font-size:12.5px;">
+          {% if rec.RecommendedCategory1 %}<span class="badge-segment">{{ rec.RecommendedCategory1 }}</span>{% if rec.Confidence1 %} <span class="text-muted">{{ rec.Confidence1 }}%</span>{% endif %}{% endif %}
+          {% if rec.RecommendedCategory2 %} <span class="badge-segment">{{ rec.RecommendedCategory2 }}</span>{% if rec.Confidence2 %} <span class="text-muted">{{ rec.Confidence2 }}%</span>{% endif %}{% endif %}
+        </p>
+        <p class="text-muted" style="font-size:12px;">{{ rec.Reason }}</p>
+      {% endif %}
+      {% if not profile.intelligence.recommended_action and not rec %}
+        {{ empty_state('fa-lightbulb', 'No recommendation available', 'Run the recommendations pipeline module.') }}
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="panel h-100">
+      <div class="panel-title"><i class="fa-solid fa-indian-rupee-sign" style="color:var(--danger); font-size:13px;"></i> Revenue at Risk</div>
+      {% if profile.intelligence.revenue_at_risk %}
+        {% set rar = profile.intelligence.revenue_at_risk %}
+        <div style="display:flex; gap:24px; flex-wrap:wrap;">
+          <div><div class="kpi-label">Est. Annual Spend</div><div class="kpi-value" style="font-size:19px;">₹{{ "{:,.0f}".format(rar.estimated_annual_spend) }}</div></div>
+          <div><div class="kpi-label">Revenue at Risk</div><div class="kpi-value" style="font-size:19px;">₹{{ "{:,.0f}".format(rar.revenue_at_risk) }}</div></div>
+        </div>
+        {% if rar.is_critical %}<span class="badge-risk-high mt-2 d-inline-block"><i class="fa-solid fa-triangle-exclamation"></i> Critical exposure</span>{% endif %}
+        <p class="text-muted mt-2" style="font-size:11.5px;">
+          Estimated potential revenue exposure = Est. Annual Spend × Churn Probability. Not a guaranteed future loss.
+        </p>
+      {% else %}
+        {{ empty_state('fa-indian-rupee-sign', 'No revenue data', 'Estimated annual spend not available for this customer.') }}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{# ---------------- Intelligence: Simulator preview ---------------- #}
+{% if profile.intelligence.simulator_preview and profile.intelligence.simulator_preview.results %}
+<div class="panel">
+  <div class="panel-title">
+    <i class="fa-solid fa-flask" style="color:var(--accent); font-size:13px;"></i> Retention Scenario Preview
+    <a class="panel-link" href="{{ url_for('retention_simulator', customer_id=profile.overview.customer_id) }}" aria-label="Open full simulator"><i class="fa-solid fa-chevron-right"></i></a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead><tr><th>Action</th><th>Retention Improvement</th><th>Cost</th><th>Retained Value</th><th>Net Benefit</th><th>ROI</th></tr></thead>
+      <tbody>
+        {% for r in profile.intelligence.simulator_preview.results %}
+        <tr class="{{ 'table-success' if r.is_best }}">
+          <td><strong>{{ r.label }}</strong>{% if r.is_best %} <span class="badge-segment">Best</span>{% endif %}</td>
+          <td>+{{ r.retention_improvement_pp }}pp</td>
+          <td>₹{{ "{:,.0f}".format(r.action_cost) }}</td>
+          <td>₹{{ "{:,.0f}".format(r.estimated_retained_value) }}</td>
+          <td>₹{{ "{:,.0f}".format(r.net_benefit) }}</td>
+          <td>{{ r.roi if r.roi is not none else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="text-muted" style="font-size:11.5px;">{{ profile.intelligence.simulator_preview.assumptions_note }}</p>
+</div>
+{% endif %}
+
+{# ---------------- Comparison ---------------- #}
+<div class="panel">
+  <div class="panel-title"><i class="fa-solid fa-scale-balanced" style="color:var(--positive); font-size:13px;"></i> Comparison — Segment vs Regional vs Overall</div>
+  {% if profile.comparison %}
+    <div class="row g-4">
+      {% for key, m in profile.comparison.items() %}
+      <div class="col-md-6 col-lg-4">
+        {{ comparison_metric(m) }}
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    {{ empty_state('fa-scale-balanced', 'No comparison data', 'Not enough data to compute averages.') }}
+  {% endif %}
+</div>
+
+{% endblock %}

@@ -37,6 +37,7 @@
           Engagement: <strong>{{ vals.EngagementScore }}</strong>/100<br>
           Satisfaction: <strong>{{ vals.SatisfactionScore }}</strong>/5
         </div>
+        <a href="{{ url_for('customer360_search', q=seg) }}" class="row-action-link d-inline-block mt-2"><i class="fa-solid fa-id-card-clip"></i> View customers in this segment</a>
       </div>
     </div>
     {% endfor %}

@@ -18,6 +18,7 @@
       <thead>
         <tr>
           {% for c in columns %}<th>{{ c }}</th>{% endfor %}
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -38,6 +39,7 @@
               {% endif %}
             </td>
           {% endfor %}
+          <td><a href="{{ url_for('customer360', customer_id=row.CustomerID) }}" class="row-action-link"><i class="fa-solid fa-id-card-clip"></i> 360</a></td>
         </tr>
         {% endfor %}
       </tbody>
